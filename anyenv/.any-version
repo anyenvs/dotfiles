@@ -1,0 +1,9 @@
+#bazelenv:
+goenv 1.18.6
+helmenv 3.9.0
+helmfilenv 0.144.0
+#istioenv
+#jenv
+nodenv 16.16.0
+pyenv 3.10.5
+tfenv 1.3.1

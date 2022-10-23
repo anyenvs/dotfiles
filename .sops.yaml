@@ -1,0 +1,22 @@
+---
+creation_rules:
+  # Specific files in folder
+  #- path_regex: path/.*.\.yaml$
+  #  encrypted_regex: '^(data|stringData)$'
+  - unencrypted_regex: '#.*|SONAR_SCANNER_URL|VAULT_(ADDR|SKIP.*)'
+    pgp: >-
+      36DE0A4E635B7B64E467D76BFABD63042C0A1E6A
+  ## Encrypt/Decrypt STDIN values
+  - encrypted_regex: '^(data|stringData|password|tlsCert|w3sre.*|clarity|license.*|.*(secret|access).*key)$'
+    pgp: >-
+      36DE0A4E635B7B64E467D76BFABD63042C0A1E6A
+  ## Encrypt / Descrypt .yaml files
+  - encrypted_regex: '^(data|stringData|password|tlsCert|w3sre.*|clarity|license.*|.*(secret|access).*key)$'
+    unencrypted_regex: '#.*'
+    path_regex: .*\.yaml.*$
+    pgp: >-
+      36DE0A4E635B7B64E467D76BFABD63042C0A1E6A,
+  ## Encypt everything if none match above
+  - unencrypted_regex: '#.*|SONAR_SCANNER_URL|VAULT_(ADDR|SKIP.*)'
+    pgp: >-
+      36DE0A4E635B7B64E467D76BFABD63042C0A1E6A

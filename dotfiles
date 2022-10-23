@@ -1,0 +1,27 @@
+#!/usr/bin/env ${SHELL:-bash}
+
+#set -e
+export DOTFILES_PATH=${DOTFILES_PATH:-$(pwd)};
+test -z "${A_COMMON_FUNCTIONS}" && export A_COMMON_FUNCTIONS=($(find ${DOTFILES_PATH:-$(pwd)}/ -name a_common_functions.bash 2>/dev/null));. $A_COMMON_FUNCTIONS
+env | grep A_COMMON_FUNCTIONS || _error "===> ❌ A_COMMON_FUNCTIONS env var is missing in $0"
+
+command="${1}"
+
+# Shift the first argument off, as we are using that.
+# http://www.tldp.org/LDP/Bash-Beginners-Guide/html/sect_09_07.html
+shift
+
+case "${command}" in
+  "install")
+    package="${1}"
+    _log "===> 🚀 DOTFILES to install package: ${package}"
+    (cd "${DOTFILES_PATH}/${package}" && DOTFILES_PATH=${DOTFILES_PATH:-$(pwd)} A_COMMON_FUNCTIONS=$A_COMMON_FUNCTIONS ${SHELL:-bash} ./install.sh)
+    _log "===> 🚀 DOTFILES package ::${package}:: installed"
+    ;;
+  *)
+    echo "${command} does not exist"
+  exit 1
+    ;;
+esac
+
+set +x

@@ -1,0 +1,44 @@
+#--- gitignore filter
+*.yml filter=gitignore
+*  filter=gitignore
+.*.bak filter=gitignore
+
+# Set the default behavior, in case people don't have core.autocrlf set.
+* text=auto
+#* -crlf
+#*.json -crlf
+
+# Explicitly declare text files you want to always be normalized and converted
+# to native line endings on checkout.
+*.c text
+*.h text
+*.java text
+*.css text
+*.js text
+*.xml text
+*.dtd text
+*.xsl text
+*.properties text
+*.txt text
+*.svg text
+*.md text
+*.txt         text eol=lf
+*.xml         text eol=lf
+*.json        text eol=lf
+*.yaml        text eol=lf
+*.yml         text eol=lf
+*.properties  text eol=lf
+*.conf        text eol=lf
+*.cfg         text eol=lf
+*.j2          text
+*.awk  text eol=lf
+*.sed  text eol=lf
+*.sh   text eol=lf
+*.png  binary
+*.jpg  binary
+*.p12  binary
+
+# git lfs tracking
+*.gz filter=lfs diff=lfs merge=lfs -text
+*.tgz filter=lfs diff=lfs merge=lfs -text
+*.zip filter=lfs diff=lfs merge=lfs -text
