@@ -2,7 +2,8 @@
 
 #set -e
 set -x
-DOTFILES_PATH=${DOTFILES_PATH:-.}
+ls *.env && . *.env || true
+DOTFILES_PATH=${DOTFILES_PATH:-..}
 test -z "${A_COMMON_FUNCTIONS}" && A_COMMON_FUNCTIONS=($(find ${DOTFILES_PATH}/ -name a_common_functions.bash 2>/dev/null)) ;. $A_COMMON_FUNCTIONS
 test -n "$A_COMMON_FUNCTIONS" || _error "===> ❌ A_COMMON_FUNCTIONS env var is missing in $0"
 export COMPDIR=/etc/bash_completion.d

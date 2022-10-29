@@ -5,6 +5,7 @@
 ###
 # Installation of packages, configurations, and dotfiles.
 ###
+ls *.env && . *.env || true
 export DOTFILES_PATH=$(pwd);
 export A_COMMON_FUNCTIONS=($(find ${DOTFILES_PATH:-.}/ -name a_common_functions.bash 2>/dev/null));. $A_COMMON_FUNCTIONS
 
@@ -14,8 +15,10 @@ export A_COMMON_FUNCTIONS=($(find ${DOTFILES_PATH:-.}/ -name a_common_functions.
 _DEFAULT_PACKAGES=(
   git
   anyenv
+  go
+  pip
+  vim
   brew
-  #vim
 )
 case $(_myOS) in linux) _PACKAGES=( ${1:-${_DEFAULT_PACKAGES[@]/brew}} ) ;; *) _PACKAGES=( ${1:-${_DEFAULT_PACKAGES[@]}} ) ;; esac
 
