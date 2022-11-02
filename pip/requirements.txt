@@ -1,0 +1,25 @@
+##
+# PIP
+##
+
+setuptools
+
+## PIP mkdocs
+## pip3 install
+mkdocs
+mkdocs-material
+mkdocs-git-revision-date-localized-plugin
+mkdocs-git-revision-date-plugin
+
+## Versioning for mkdocs using mike (a play on the word make)
+## `mike` is documented https://squidfunk.github.io/mkdocs-material/setup/setting-up-versioning/
+mike
+
+##
+yq
+PyYAML
+toml
+
+##
+requests
+awslogs

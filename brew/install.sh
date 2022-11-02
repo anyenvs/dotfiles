@@ -2,6 +2,7 @@
 
 #set -e
 set -x
+ls *.env && . *.env || true
 DOTFILES_PATH=${DOTFILES_PATH:-..}
 test -z "${A_COMMON_FUNCTIONS}" && A_COMMON_FUNCTIONS=($(find ${DOTFILES_PATH}/ -name a_common_functions.bash 2>/dev/null));. $A_COMMON_FUNCTIONS
 test -n "$A_COMMON_FUNCTIONS" || _error "===> ❌ A_COMMON_FUNCTIONS env var is missing in $0"
@@ -121,10 +122,14 @@ _brew-install-packages() {
 
 
 ## _MAIN__
-main() {
+__main__() {
     case $(_myOS) in linux) _add-linuxbrew-user || return 1 ;; darwin) _xcode-cli-install ;; *) _error "OS $(_myOS) is currently not supported" ;; esac
     _brew-install || return 1
     _brew-install-packages $_BREW_PACKAGES
 }
-main
+# ######
+# Main
+# ######
+test -n "$1" && $1 || __main__
+
 set +x

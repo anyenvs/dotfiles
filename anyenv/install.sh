@@ -2,7 +2,8 @@
 
 #set -e
 set -x
-DOTFILES_PATH=${DOTFILES_PATH:-.}
+ls *.env && . *.env || true
+DOTFILES_PATH=${DOTFILES_PATH:-..}
 test -z "${A_COMMON_FUNCTIONS}" && A_COMMON_FUNCTIONS=($(find ${DOTFILES_PATH}/ -name a_common_functions.bash 2>/dev/null)) ;. $A_COMMON_FUNCTIONS
 test -n "$A_COMMON_FUNCTIONS" || _error "===> ❌ A_COMMON_FUNCTIONS env var is missing in $0"
 export COMPDIR=/etc/bash_completion.d
@@ -149,7 +150,7 @@ _setup_completion() {
 ###
 # Install Anyenv packages
 ###
-_main_() {
+__main__() {
     eval which {anyenv,} && printf "\n🚀 ANYENV Installed at: ${ANYENV_ROOT}\n"
     echo "ANYENV_ENVS=$ANYENV_ENVS"
     if test ! $(which anyenv); then
@@ -157,9 +158,9 @@ _main_() {
       _setup_anyenv ${_ANYENV_ENVS[@],,}
     fi
 }
-###
+# ######
 # Main
-###
-_main_
+# ######
+test -n "$1" && $1 || __main__
 
 set +x
