@@ -5,8 +5,9 @@
 ###
 # Installation of packages, configurations, and dotfiles.
 ###
-ls *.env && . *.env || true
-export DOTFILES_PATH=$(pwd);
+#export DOTFILES_PATH=$(pwd);
+export DOTFILES_PATH=$(dirname $0);
+cd $DOTFILES_PATH ; ls *.env && . *.env || true
 export A_COMMON_FUNCTIONS=($(find ${DOTFILES_PATH:-.}/ -name a_common_functions.bash 2>/dev/null));. $A_COMMON_FUNCTIONS
 
 ###
