@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #set -e
-ls *.env && . *.env || true
+ls *.env &>/dev/null && . *.env || true
 DOTFILES_PATH=${DOTFILES_PATH:-..}
 test -z "${A_COMMON_FUNCTIONS}" && A_COMMON_FUNCTIONS=($(find ${DOTFILES_PATH}/ -name a_common_functions.bash 2>/dev/null));. $A_COMMON_FUNCTIONS
 test -n "$A_COMMON_FUNCTIONS" || _error "===> ❌ A_COMMON_FUNCTIONS env var is missing in $0"
@@ -12,6 +12,7 @@ _go-init() {
     # ######
     mkdir -p $HOME/.go ; ln -svnf $HOME/.go $HOME/go ; ln -svnf $HOME/.go $HOME/sdk
     test -f ~/.anyenvrc && . ~/.anyenvrc || _error "===> ❌ No ANYENV installed" ;
+    grep -q anyenvrc $HOME/.bashrc || echo 'test -f ~/.anyenvrc && . ~/.anyenvrc' >>$HOME/.bashrc
     eval which {go,} || { _error "===> ❌ No Go installed" ; exit; }
 }
 
@@ -40,9 +41,9 @@ _go-modules() {
 }
 
 __main__() {
-    _go-init || true
-    _go-alt-init || true
-    _go-modules ${GO_MODULES[@]}|| true
+    _go-init || true ;
+    _go-alt-init || true ;
+    _go-modules ${GO_MODULES[@]}|| true ;
 }
 # ######
 # Main

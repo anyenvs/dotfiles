@@ -6,20 +6,25 @@
 # Installation of packages, configurations, and dotfiles.
 ###
 #export DOTFILES_PATH=$(pwd);
-export DOTFILES_PATH=$(dirname $0);
-cd $DOTFILES_PATH ; ls *.env && . *.env || true
+#export DOTFILES_PATH=$(dirname $0);
+#dirname $0
+#dirname $(readlink -f ${BASH_SOURCE:-$0})
+#dirname $(realpath ${BASH_SOURCE:-$0})
+export DOTFILES_PATH=$(dirname $(realpath ${BASH_SOURCE:-$0}));
+cd $DOTFILES_PATH ; ls *.env &>/dev/null && . *.env || true
 export A_COMMON_FUNCTIONS=($(find ${DOTFILES_PATH:-.}/ -name a_common_functions.bash 2>/dev/null));. $A_COMMON_FUNCTIONS
 
 ###
 # Install dependencies
 ###
 _DEFAULT_PACKAGES=(
-  git
-  anyenv
-  go
-  pip
-  vim
-  brew
+    git
+    anyenv
+    go
+    pip
+    vim
+    brew
+    starship
 )
 case $(_myOS) in linux) _PACKAGES=( ${1:-${_DEFAULT_PACKAGES[@]/brew}} ) ;; *) _PACKAGES=( ${1:-${_DEFAULT_PACKAGES[@]}} ) ;; esac
 

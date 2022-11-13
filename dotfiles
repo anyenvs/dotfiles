@@ -3,7 +3,7 @@
 #set -e
 #export DOTFILES_PATH=${DOTFILES_PATH:-$(pwd)};
 export DOTFILES_PATH=${DOTFILES_PATH:-$(dirname $0)};
-cd $DOTFILES_PATH ; ls *.env && . *.env || true
+cd $DOTFILES_PATH ; ls *.env &>/dev/null && . *.env || true
 test -z "${A_COMMON_FUNCTIONS}" && export A_COMMON_FUNCTIONS=($(find ${DOTFILES_PATH:-$(pwd)}/ -name a_common_functions.bash 2>/dev/null));. $A_COMMON_FUNCTIONS
 env | grep A_COMMON_FUNCTIONS || _error "===> ❌ A_COMMON_FUNCTIONS env var is missing in $0"
 

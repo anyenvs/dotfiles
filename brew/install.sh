@@ -2,7 +2,7 @@
 
 #set -e
 set -x
-ls *.env && . *.env || true
+ls *.env &>/dev/null && . *.env || true
 DOTFILES_PATH=${DOTFILES_PATH:-..}
 test -z "${A_COMMON_FUNCTIONS}" && A_COMMON_FUNCTIONS=($(find ${DOTFILES_PATH}/ -name a_common_functions.bash 2>/dev/null));. $A_COMMON_FUNCTIONS
 test -n "$A_COMMON_FUNCTIONS" || _error "===> ❌ A_COMMON_FUNCTIONS env var is missing in $0"
@@ -18,12 +18,12 @@ _BREW_PACKAGES=(
     # anyenv managed: nvm, pyenv, terraform, terragrunt, go, golangci-lint, bazel, helm, helmfile, istio
     # awscli
     ## build utils
-    bash bash-completion@2 dos2unix
-    fd colordiff gls htop jq jid python-yq tree
+    bash bash-completion@2 dos2unix bat
+    fd colordiff gls gawk htop jq jid python-yq tree
     coreutils findutils diffutils binutils iputils
     gcc@8 gcc make cmake libffi
     gnupg grep ca-certificates
-    xz bzip2 lzlib zlib zip
+    xz bzip2 lzlib zlib zip 7zip p7zip
     autoconf openssl@1.1 pkg-config readline
     # fzf
     git #gh
@@ -123,9 +123,9 @@ _brew-install-packages() {
 
 ## _MAIN__
 __main__() {
-    case $(_myOS) in linux) _add-linuxbrew-user || return 1 ;; darwin) _xcode-cli-install ;; *) _error "OS $(_myOS) is currently not supported" ;; esac
-    _brew-install || return 1
-    _brew-install-packages $_BREW_PACKAGES
+    case $(_myOS) in linux) _add-linuxbrew-user || return 1 ;; darwin) _xcode-cli-install ;; *) _error "OS $(_myOS) is currently not supported" ;; esac ;
+    _brew-install || return 1 ;
+    _brew-install-packages $_BREW_PACKAGES ;
 }
 # ######
 # Main
