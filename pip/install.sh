@@ -18,7 +18,7 @@ esac
 # #####
 # PIP
 # #####
-eval which {pip,} && pip install -U pip || _error "===> ❌ No PIP installed"
+eval which {pip,} && pip install -U pip || { _error "===> ❌ No PIP installed" ; curl https://bootstrap.pypa.io/get-pip.py -o- | python; }
 
 _pip-deps() {
     # ######
