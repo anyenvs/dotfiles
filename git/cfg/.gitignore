@@ -36,6 +36,7 @@ nohup*
 .terraform
 .terragrunt*
 .aliases
+version
 .bashrc*
 *.lock
 helmfile.*
