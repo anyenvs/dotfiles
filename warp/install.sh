@@ -16,7 +16,10 @@ _warp_install() {
     eval which brew && brew install --cask warp || _error "===> ❌ BREW not installed..."
 }
 _warp_themes() {
-    test -d "${DOTFILES_PATH}/warp" && ( cd $HOME ; ln -svnf "${DOTFILES_PATH}"/warp .warp ) ;
+    test -f "${HOME}/.warp" && {
+        _log "===> File: $(ls -l ${HOME}/.warp)\n ===> Remove file before symlinking" ;
+        return ;
+    } || ( cd $HOME ; ln -svnf "${DOTFILES_PATH}"/warp .warp )
 }
 
 __main__() {

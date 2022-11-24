@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "nhoizey.gremlins",
+    "ms-kubernetes-tools.kind-vscode",
+    "suhay.vscode-editor-group-minimizer",
+    "github.vscode-pull-request-github",
+    "shardulm94.trailing-spaces",
+    "visualstudioexptteam.vscodeintellicode",
+    "VisualStudioExptTeam.vscodeintellicode"
+  ]
+}

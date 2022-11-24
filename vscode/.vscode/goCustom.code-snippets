@@ -1,0 +1,186 @@
+{
+  // Place your __GO__ workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and
+  // description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope
+  // is left empty or omitted, the snippet gets applied to all languages. The prefix is what is
+  // used to trigger the snippet and the body will be expanded and inserted. Possible variables are:
+  // $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders.
+  // Placeholders with the same ids are connected.
+  // Example:
+  // "Print to console": {
+  // 	"scope": "javascript,typescript",
+  // 	"prefix": "log",
+  // 	"body": [
+  // 		"console.log('$1');",
+  // 		"$2"
+  // 	],
+  // 	"description": "Log output to console"
+
+  // GO MAin
+  // https://code.visualstudio.com/docs/editor/userdefinedsnippets#_snippet-syntax
+  // "main boilerplate" : { "prefix": "go-package", "body": [ "package main\nfunc main() {\n\t$0\n}", ], "description": "Custom snippet" },
+  "go Main": {
+    "prefix": "go-main",
+    "body": [
+        "package main\n",
+        "func main() {\n\n\tfmt.Println(\"Hello World\")\n\t$0\n}",
+      ],
+    "description": "Custom snippet for a Go main application"
+  },
+
+  "go Main Input": {
+    "prefix": "go-input-scanln",
+    "body": [
+      "// https://zetcode.com/golang/readinput",
+      "var a, b int",
+      "fmt.Print(\"Enter A: \")",
+      "fmt.Scanln(&a)",
+      "fmt.Print(\"Enter B: \")",
+      "fmt.Scanln(&b),"
+    ],
+    "description": "Custom snippet to Input "
+  },
+
+  "go Formatting": {
+    "prefix": "go-formatting",
+    "body": [
+      "//fmt.Printf(\"%.0f \",f())",
+      "//fmt.Printf(\"%.2f \",f())",
+    ],
+    "description": "Custom snippet to Input "
+  },
+
+  // GO Loop, IF, CASE
+  "go for loop range": {
+      "prefix": "go-for-range",
+      "body": [
+          "for _, v := range ${1:[]string{'a','z'}} {\n\t$0\n}",
+        ],
+      "description": "Custom snippet: LOOP range "
+  },
+  "go for loop condition": {
+      "prefix": "go-for",
+      "body": [
+          "//https://tour.golang.org/flowcontrol/2",
+          "for ${1:ch := 'a'}; ${2:ch <= 'z'}; ${3:ch++} {\n",
+          "\t${4:fmt.Println(str1 + string(ch))}\n\t\t$0\n}",
+        ],
+      "description": "Custom snippet: FOR with condition"
+  },
+
+
+  "go while infinite loop": {
+    "prefix": "go-while",
+    "body": [
+        "//for sum < 1000 { sum += sum }",
+        "//for {} //infinite loop"
+      ],
+    "description": "Custom snippet: IF "
+  },
+
+  "go if": {
+    "prefix": "go-if",
+    "body": [
+        "if ${2:c == 0} {\n\t$1\n} else {\n\t$0\n}",
+        "// if v := math.Pow(x, n); v < lim { return v; }",
+      ],
+    "description": "Custom snippet: IF "
+  },
+
+  "go defer": {
+    "prefix": "go-defer",
+    "body": [
+        "defer fmt.Println(\"world\")",
+        "fmt.Println(\"hello\")",
+      ],
+    "description": "Custom snippet: DEFER (https://tour.golang.org/flowcontrol/12) "
+  },
+
+  "go case": {
+    "prefix": "go-case",
+    "body": [
+      "// https://tour.golang.org/flowcontrol/9",
+      "switch ${1:t := arg.(type)} {",
+      "\tcase string:\n\t\ta = t\n\tcase int:\n\t\tb = t",
+      "\tdefault:\n\t\tpanic(\"Unknown argument\")\n}"
+    ],
+    "description": "Custom snippet: SWITCH, CASE"
+  },
+
+    // Functions snippets
+    "go http handlerFunc": {
+      "prefix": "go-func-http-handler",
+      "body": [
+          "func ${1:http}(w http.ResponseWriter, r *http.Request) {",
+          "\t$0",
+          "}",
+      ],
+      "description": "Custom snippet to define a http handler function"
+  },
+  //
+  "go Public function": {
+      "prefix": "go-func-public",
+      "body": [
+          "// Sum (with capital) adds two numbers a and b to produce a sum, c",
+          "func ${1:Sum}(a, b int) (c int) {\n\tc = a + b\n\treturn\n}",
+      ],
+      "description": "Custom snippet to define Public function"
+  },
+
+  // Type Snippets
+  "go type Closure": {
+      "prefix": "go-type-closure",
+      "body": [
+          "//${3:counter} := ${2:createCounter(})",
+          "//fmt.Println(${3:counter}())",
+          "type ${1:IntFunc} func() int",
+          "\nfunc ${2:createCounter(}) ${1:IntFunc} {",
+          "\t${3:counter} := 1\n\treturn func() int {\n\t\t${3:counter} ++\n\t\treturn ${3:counter}\n\t}\n}",
+      ],
+      "description": "Custom snippet to define a type "
+  },
+
+  "go type with Reciever": {
+      "prefix": "go-type-receiver",
+      "body": [
+          "//${3:cards} := ${1:deck}{\"Ace of Diamonds\",\"5 of Diamonds\"}",
+          "//${3:cards}.print()",
+          "type ${1:deck} []string",
+          //"\n$0",
+          "\nfunc (${2:d} ${1:deck}) print () {",
+          "\n\t\tfor i, val := range ${2:d} {\n\t\t\tfmt.Println(i,val)\n\t\t\t$0\n\t}",
+          "}",
+      ],
+      "description": "Custom snippet to define a type with reciever "
+  },
+
+  // Struct
+  "go Struct type": {
+    "prefix": "go-struct-type",
+    "body": [
+      "// https://tour.golang.org/moretypes/3",
+      "type ${1:Vertex} struct {\n\tX int\n\tY int\n\t$0\n}",
+    ],
+    "description": "Custom snippet to define a type with reciever "
+  },
+
+
+  // REST API
+  "go Http Call": {
+    "prefix": "go-http-call",
+    "body": [
+      //  resp, err := http.Get(fmt.Sprintf("http://openweathermap.org/data/2.5/weather?q=%s&appid=%s&units=metric", city, API_KEY))
+      "resp, err := http.Get(fmt.Sprintf(\"$1\", city, API_KEY))",
+      "\ndefer resp.Body.Close()\n",
+      "body, err := ioutil.ReadAll(resp.Body)\n",
+      "if err != nill (\n\tlog.Fatal(err)\n)",
+      "resp.Body.Close()",
+    ],
+    "description": "Custom snippet for HTTP call "
+  },
+
+
+
+
+} // EOF
+
+

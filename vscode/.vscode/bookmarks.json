@@ -1,0 +1,44 @@
+{
+	"files": [
+		{
+			"path": "asp-infra-sre/helm/charts/grafana/values-promtail.yaml",
+			"bookmarks": [
+				{
+					"line": 66,
+					"column": 20,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "scripts/podman/podman-compose-custom",
+			"bookmarks": [
+				{
+					"line": 1053,
+					"column": 17,
+					"label": "podman-compose custom commands"
+				}
+			]
+		},
+		{
+			"path": "monorepo-devapps/scripts/rootless.bash",
+			"bookmarks": [
+				{
+					"line": 99,
+					"column": 6,
+					"label": "debian repository for rootless podman"
+				}
+			]
+		},
+		{
+			"path": "../../../Library/Application Support/Code/User/settings.json",
+			"bookmarks": [
+				{
+					"line": 1179,
+					"column": 6,
+					"label": "TODO rootFolder"
+				}
+			]
+		}
+	]
+}

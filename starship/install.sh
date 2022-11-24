@@ -2,8 +2,8 @@
 
 #set -e
 ls *.env &>/dev/null && . *.env || true
-DOTFILES_PATH=${DOTFILES_PATH:-..}
-test -z "${A_COMMON_FUNCTIONS}" && A_COMMON_FUNCTIONS=($(find ${DOTFILES_PATH}/ -name a_common_functions.bash 2>/dev/null));. $A_COMMON_FUNCTIONS
+DOTFILES_PATH="${DOTFILES_PATH:-$(realpath ..)}"
+test -z "${A_COMMON_FUNCTIONS}" && A_COMMON_FUNCTIONS=($(find "${DOTFILES_PATH}"/ -name a_common_functions.bash 2>/dev/null));. $A_COMMON_FUNCTIONS
 test -n "$A_COMMON_FUNCTIONS" || _error "===> ❌ A_COMMON_FUNCTIONS env var is missing in $0"
 
 eval which {git,gpg,bsdtar,wget,xz,zip,unzip,7zip} || _install wget git gnupg2 libarchive-tools zip unzip xz-utils p7zip-full;
@@ -16,7 +16,7 @@ _starship-configs(){
     test -f ${HOME}/.config/starship.toml -a -L ${HOME}/.config/starship.toml && {
         _log "===> File: $(ls -l ${HOME}/.config/starship.toml)\n ===> Remove file before symlinking" ;
         return ;
-    }   || ln -svnf ${DOTFILES_PATH}/starship/starship.toml ${HOME}/.config/starship.toml ;
+    }   || ln -svnf "${DOTFILES_PATH}"/starship/starship.toml ${HOME}/.config/starship.toml ;
 }
 
 _startship-install() {

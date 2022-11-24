@@ -1,0 +1,438 @@
+{
+  // Place your __GO__ workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and
+  // description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope
+  // is left empty or omitted, the snippet gets applied to all languages. The prefix is what is
+  // used to trigger the snippet and the body will be expanded and inserted. Possible variables are:
+  // $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders.
+  // Placeholders with the same ids are connected.
+  // Example:
+  // "Print to console": {
+  // 	"scope": "javascript,typescript",
+  // 	"prefix": "log",
+  // 	"body": [
+  // 		"console.log('$1');",
+  // 		"$2"
+  // 	],
+  // 	"description": "Log output to console"
+
+  // GO MAin
+  // https://code.visualstudio.com/docs/editor/userdefinedsnippets#_snippet-syntax
+  // "main boilerplate": {}.
+  "go Main": {
+    "prefix": "go-main",
+    "body": [
+      "package main\n",
+      "import (\n\t\"fmt\"; _ \"io/ioutil\"; _ \"encoding/json\"",
+      "_ \"encoding/json\"; _ \"log\"; _ \"net/http\"; _ \"time\"",
+      "_ \"github.com/gin-gonic/gin\"; _ \"github.com/gin-contrib/zap\"",
+      "_ \"go.uber.org/zap\"",
+      ")",
+      "func main() {\n",
+      "\tfmt.Println(\"Hello ${1:World}\")",
+      "\t$0",
+      "}"
+    ],
+    "description": "Custom snippet for a Go main application"
+  },
+  "go Package": {
+    "prefix": "go-package",
+    "body": [
+      "package ${1:main}\n",
+      "import (\n\t\"fmt\"; _ \"io/ioutil\"",
+      "_ \"encoding/json\"; _ \"log\"; _ \"net/http\"; _ \"time\"",
+      "_ \"github.com/gin-gonic/gin\"; _ \"github.com/gin-contrib/zap\"",
+      "_ \"go.uber.org/zap\"",
+      "_ \"github.com/spf13/viper\"",
+      ")",
+      "\nfunc ${2:GoRunTasks}() {\n\tfmt.Println(\"===== Session 04 Homework ===\")\n\tdefer fmt.Println(\"===== End Session 04 ===\")\n$0\n}"
+    ],
+    "description": "Custom snippet to define package "
+  },
+
+  // Go Package Config
+  "go Config Package": {
+    "prefix": "go-package-config",
+    "body": [
+      "package config\n",
+      "import (\n\t\"fmt\";\"strings\";\"github.com/spf13/viper\"\n)\n",
+      "const EnvPrefix = \"APP\"\n",
+      "type Config interface {\n\tLoadConfig(configType string) (*config, error)\n}\n",
+      "type config struct {\n\tApp\tApp\t`json:\"app,omitempty\"`\n\tRedis\tRedis\t`json:\"redis,omitempty\"`\n\tMysql\tMySQL\t`json:\"mysql,omitempty\"`\n}\n",
+      "type App struct {\n\tPort\tint\t`json:\"port,omitempty\"`\n}\n",
+      "type Redis struct {\n\tHost\tstring\t`json:\"host,omitempty\"`\n\tPort\tint\t`json:\"port,omitempty\"`\n}\n",
+      "type MySQL struct {\n\tHost\tstring\t`json:\"host,omitempty\"`\n\tPort\tint\t`json:\"port,omitempty\"`\n\tUser\tstring\t`json:\"user,omitempty\"`\n\tPassword\tstring\t`json:\"password,omitempty\"`\n\tDatabase\tstring\t`json:\"database,omitempty\"`\n}\n",
+      "func LoadConfig(configType string) (*config, error) {\n\tviper.SetConfigName(\"config\")\n\tviper.AddConfigPath(\"./\")\n\tviper.SetConfigType(configType)\n\tviper.SetEnvKeyReplacer(strings.NewReplacer(\".\", \"_\"))\n\tviper.AutomaticEnv()\n\tviper.AllowEmptyEnv(true)\n\n\tif err := viper.ReadInConfig(); err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to load config: %w\", err)\n\t}\n",
+      "\tvar cfg config\n\tif err := viper.Unmarshal(&cfg); err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to unmarshall config: %w\", err)\n\t}\n\treturn &cfg, nil\n}\n\n"
+    ],
+    "description": "Custom snippet for Config package"
+  },
+
+  // Imports
+  "go Imports": {
+    "prefix": "go-imports",
+    "body": [
+      "import (\n\t\"fmt\"; _ \"io/ioutil\"; _ \"strconv\"",
+      "_ \"encoding/json\"; _ \"log\"; _ \"net/http\"; _ \"time\"",
+      "_ \"database/sql\"; _ \"github.com/go-sql-driver/mysql\"",
+      "_ \"github.com/gin-gonic/gin\"; _ \"github.com/gin-contrib/zap\"",
+      "_ \"google.golang.org/protobuf\"",
+      "_ \"go.uber.org/zap\"",
+      "_ \"github.com/spf13/viper\"",
+      "\t$0",
+      ")"
+    ],
+    "description": "Custom snippet to define a type "
+  },
+
+  "go Main Input": {
+    "prefix": "go-input-scanln",
+    "body": [
+      "// https://zetcode.com/golang/readinput",
+      "var a, b int",
+      "fmt.Print(\"Enter A: \")",
+      "fmt.Scanln(&a)",
+      "fmt.Print(\"Enter B: \")",
+      "fmt.Scanln(&b),"
+    ],
+    "description": "Custom snippet to Input "
+  },
+
+  "go Formatting": {
+    "prefix": "go-formatting",
+    "body": ["//fmt.Printf(\"%.0f \",f())", "//fmt.Printf(\"%.2f \",f())"],
+    "description": "Custom snippet to Input "
+  },
+
+  // GO Loop, IF, CASE
+  "go for loop range": {
+    "prefix": "go-for-range",
+    "body": ["for _, v := range ${1:[]string{'a','z'}} {\n\t$0\n}"],
+    "description": "Custom snippet: LOOP range "
+  },
+  "go for loop range2": {
+    "prefix": "go-for-range2",
+    "body": ["for range ${1:[10]int{}} {\n\t$0\n}"],
+    "description": "Custom snippet: LOOP range "
+  },
+  "go for loop condition": {
+    "prefix": "go-for",
+    "body": [
+      "//https://tour.golang.org/flowcontrol/2",
+      "for ${1:i} := 0; ${1:i} < 10; ${1:i}++ {\n",
+      "\t${2:fmt.Println(str1 + string(i))}\n\t\t$0\n}"
+    ],
+    "description": "Custom snippet: FOR with condition"
+  },
+
+  "go while infinite loop": {
+    "prefix": "go-while",
+    "body": ["//for sum < 1000 { sum += sum }", "//for {} //infinite loop"],
+    "description": "Custom snippet: IF "
+  },
+
+  // List Alphabet
+  "go alphabet-list": {
+    "prefix": "go-for-alphabet-list",
+    "body": [
+      "for ch := 'a'; ch <= 'z'; ch++ {\n  fmt.Printf(\"%c\", ch)\n}\n",
+      "fmt.Println(\"space - \",rune(' '))",
+      "for ch := 'A'; ch <= 'z'; ch++ {\n\tfmt.Printf(\"%d->%c, \",ch, ch)\n}",
+    ],
+    "description": "GO List Alphabet"
+  },
+
+  "go if": {
+    "prefix": "go-if",
+    "body": [
+      "if ${2:c == 0} {\n\t$1\n} else {\n\t$0\n}",
+      "// if v := math.Pow(x, n); v < lim { return v; }"
+    ],
+    "description": "Custom snippet: IF "
+  },
+
+  "go defer": {
+    "prefix": "go-defer",
+    "body": ["defer fmt.Println(\"world\")", "fmt.Println(\"hello\")"],
+    "description": "Custom snippet: DEFER (https://tour.golang.org/flowcontrol/12) "
+  },
+
+  "go case": {
+    "prefix": "go-case",
+    "body": [
+      "// https://tour.golang.org/flowcontrol/9",
+      "switch ${1:t := arg.(type)} {",
+      "\tcase string:\n\t\ta = t\n\tcase int:\n\t\tb = t",
+      "\tdefault:\n\t\tpanic(\"Unknown argument\")\n}"
+    ],
+    "description": "Custom snippet: SWITCH, CASE"
+  },
+
+  "go Print Memo": {
+    "prefix": "go-memo",
+    "body": [
+      "fmt.Println(\"===== Memo ===\")",
+      "defer fmt.Println(\"===== End Memo ===\")"
+    ],
+    "description": "Custom Println Memo"
+  },
+
+  // Functions snippets
+  "go Snippet": {
+    "prefix": "go-snippet",
+    "body": [
+      "\"go Custom ${1:Snippet}\": {\n\t\"prefix\": \"go-custom-${1:snippet}\",\n\t\"body\": [\n\t\t\"$0\",\n\t],\n\t\t\"description\": \"go Custom ${1:Snippet}\"\n},",
+      ""
+    ],
+    "description": "go Scripting shebang"
+  },
+  // go Scripting shebang
+  "go Scripting shebang": {
+    "prefix": "go-scripting-shebang",
+    "body": [
+      "/// 2>/dev/null ; gorun \"$0\" \"$@\" ; exit $?"
+    ],
+    "description": "go Scripting shebang"
+  },
+  // Public / Exported function
+  "go Public function": {
+    "prefix": "go-func-public",
+    "body": [
+      "// Sum (with capital) adds two numbers a and b to produce a sum, c",
+      "func ${1:Sum}(a, b int) (c int) {\n\tc = a + b\n\treturn\n}"
+    ],
+    "description": "Custom snippet to define Public function"
+  },
+
+  //
+  "go Fibonacci Closure": {
+    "prefix": "go-fibonacci-closure",
+    "body": [
+      "// fib := fibonacci()\n// fmt.Println(fib(), fib())",
+      "type Fibonacci func() float64\n",
+      "func fibonacci() Fibonacci {\n\tvar curr, next float64\n\tcurr, next = 0, 1\n\treturn func() float64 {\n\t\tcurr, next = next, curr+next\n\t\treturn curr\n\t\t}\n}"
+    ],
+    "description": "Custom snippet for Fibbonacci Closure with type "
+  },
+
+  // Type Snippets
+  "go type Closure": {
+    "prefix": "go-type-closure",
+    "body": [
+      "//${3:counter} := ${2:createCounter(})",
+      "//fmt.Println(${3:counter}())",
+      "type ${1:IntFunc} func() int",
+      "\nfunc ${2:createCounter(}) ${1:IntFunc} {",
+      "\t${3:counter} := 1\n\treturn func() int {\n\t\t${3:counter} ++\n\t\treturn ${3:counter}\n\t}\n}"
+    ],
+    "description": "Custom snippet to define a type "
+  },
+
+  "go type with Reciever": {
+    "prefix": "go-type-receiver",
+    "body": [
+      "//${3:cards} := ${1:deck}{\"Ace of Diamonds\",\"5 of Diamonds\"}",
+      "//${3:cards}.print()",
+      "type ${1:deck} []string",
+      //"\n$0",
+      "\nfunc (${2:d} ${1:deck}) print () {",
+      "\n\t\tfor i, val := range ${2:d} {\n\t\t\tfmt.Println(i,val)\n\t\t\t$0\n\t}",
+      "}"
+    ],
+    "description": "Custom snippet to define a type with reciever "
+  },
+
+  // Struct
+  "go Struct type": {
+    "prefix": "go-struct-type",
+    "body": [
+      "\n// https://tour.golang.org/moretypes/3",
+      "type ${1:Vertex} struct {\n\tX, Y int\n\t$0\n}",
+      "\n// Constructor",
+      "func New${1:Vertex}(x,y int) (${1:Vertex}, error) {\n\t//v := ${1:Vertex}{x,y}\n\treturn v{x,y}, nil\n}"
+    ],
+    "description": "Custom snippet to define a type with reciever "
+  },
+
+  // Constructor
+  "go Constructor": {
+    "prefix": "go-constructor",
+    "body": [
+      "\ntype Vertex struct { $0 }",
+      "\n// Constructor",
+      "func New${1:Vertex}(${2:x,y int}) ${1:Vertex} {\n\treturn ${1:Vertex}{}\n}"
+    ],
+    "description": "Custom snippet func constructor"
+  },
+
+  "go Interface": {
+    "prefix": "go-interface",
+    "body": [
+      "\ntype ${2:Shape} interface {\n\tArea() float64\n\tPerim() float64\n}",
+      "\ntype ${1:shape} struct {\n\tx, y int\n}\n",
+      "\nfunc New${2:Shape}(x,y int) (${2:Shape}, error) {\n\t//s := ${1:shape}{x,y}\n\treturn ${1:shape}{x,y}, nil\n}\n",
+      "\nfunc (s ${1:shape}) Area() float64 { return 1 }",
+      "\nfunc (s ${1:shape}) Perim() float64 { return 1 }\n"
+    ],
+    "description": "Custom snippet for Interface "
+  },
+
+  // REST API
+  "go Http Call": {
+    "prefix": "go-http-call",
+    "body": [
+      //  resp, err := http.Get(fmt.Sprintf("http://openweathermap.org/data/2.5/weather?q=%s&appid=%s&units=metric", city, API_KEY))
+      "resp, err := http.Get(fmt.Sprintf(\"$1\", city, API_KEY))",
+      "\ndefer resp.Body.Close()\n",
+      "body, err := ioutil.ReadAll(resp.Body)\n",
+      "if err != nill (\n\tlog.Fatal(err)\n)",
+      "resp.Body.Close()"
+    ],
+    "description": "Custom snippet for HTTP call "
+  },
+  // REST Handler function
+  "go http handlerFunc": {
+    "prefix": "go-func-http-handler",
+    "body": [
+      "func ${1:http}(w http.ResponseWriter, r *http.Request) {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Custom snippet to define a http handler function"
+  },
+
+  // Random number
+  "go Random Number": {
+    "prefix": "go-random-number",
+    "body": [
+      "//var randSource = rand.NewSource(time.Now().UnixNano())",
+      "//var r = rand.New(rand.NewSource(time.Now().UnixNano())) // randomize in unix nanosec",
+      "//var r = rand.New(rand.NewSource(time.Now().Unix())) // randomize in unix time",
+      "//time.Sleep(time.Second * time.Duration(r.Intn(3))) // wait random number of seconds upto 3",
+      "r := rand.New(rand.NewSource(time.Now().UnixNano())) // randomizer in unix nanosec",
+      "num := r.Intn(10) // generate random number in the range of 10"
+    ],
+    "description": "Custom snippet for Random Number"
+  },
+
+  // Function retunrs String slice of Random numbers
+  "go Random Numbers Slice": {
+    "prefix": "go-random-numbers-slice",
+    "body": [
+      "// createStringArray creates array with random numbers converted to string",
+      "func createStringArray(n int) []string {",
+      "\tstringSlice := []string{}\n\tr := rand.New(rand.NewSource(time.Now().Unix()))\n",
+      "\tfor i := 0; i <= n-1; i++ {\n\t\tvar a string\n\t\tlen := r.Intn(n)\n\t\tfor j := 0; j <= len; j++ {\n\t\t\t//fmt.Println(r.Intn(n))\n\t\t\ta = a + strconv.Itoa(r.Intn(n))\n\t\t}\n\t\tstringSlice = append(stringSlice, a)\n\t}",
+      "\treturn stringSlice",
+      "}"
+    ],
+    "description": "Custom snippet for Random Numbers Slice "
+  },
+
+  // Testing
+  "go Unit Test": {
+    "prefix": "go-test-unit",
+    "body": [
+      "package ${1:module}\n",
+      "import (\n\t\"testing\"\n\t_ \"github.com/stretchr/testify/assert\"\n)\n",
+      "var ( TestErrorMsg = \"expected result SHOULD NOT be equal\"; TestSuccessMsg = \"expected result should be equal\")\n",
+      "func Test${2:Func}(t *testing.T) {\n\tresult := 1\n\texpected := 1\n",
+      "\n\tassert.IsType(t, []string{}, figures.callstack)\n\tassert.Equal(t, 3, len(figures.callstack), TestSuccessMsg)\n\tassert.NotEqual(t, \"\", figures.callstack, TestErrorMsg)\n",
+      "\n\tif result != expected {\n\t\tt.Errorf(\"failed: expected %v, result %v\", expected, result)\n\t\treturn\n\t}",
+      "\n\tt.Logf(\"success: expected %v, result %v\", expected, result)\n}"
+    ],
+    "description": "Unit Test in GO"
+  },
+
+  // GO Files
+  "go File Read Write": {
+    "prefix": "go-read-file",
+    "body": [
+      "//import \"io\"",
+      "\nf, err := os.Open(\"${1:story.txt}\")",
+      "\nif err != nil && err != io.EOF {\n\tlog.Fatal(err)\n}",
+      "\ndefer f.Close()"
+    ],
+    "description": "Read Write file in GO"
+  },
+
+  "go File Statistics": {
+    "prefix": "go-file-statistics",
+    "body": [
+      "\nfileinfo, err := f.Stat()",
+      "\nif err != nil {log.Fatal(err)}",
+      "\nfilesize := fileinfo.Size()",
+      "\nfmt.Println(\"File size in Bytes:\", filesize)"
+    ],
+    "description": "Get File Info in GO"
+  },
+
+  // sort slice
+  "go Sort Slice": {
+    "prefix": "go-sort-slice",
+    "body": [
+      "type S struct {\n\tv int\n}\n",
+      "func sortSlice() {\ns := []S{{1}, {3}, {5}, {2}}\nsort.Slice(s, func(i, j int) bool { return s[i].v < s[j].v })\n\nfmt.Printf(\"%#v\", s)\n}"
+      // slice sort
+    ],
+    "description": "go Sort Slice"
+  },
+
+  "go Sort Slice by Keys": {
+    "prefix": "go-sort-slice-by-key",
+    "body": [
+      "type S struct {\n\tv int\n}\n",
+      "func sortSlice() {\ns := []S{{1}, {3}, {5}, {2}}\nsort.Slice(s, func(i, j int) bool { return s[i].v < s[j].v })\n\nfmt.Printf(\"%#v\", s)\n}"
+      // slice sort
+    ],
+    "description": "go Sort Slice"
+  },
+
+  "go Sort Slice by Values": {
+    "prefix": "go-sort-slice-by-value",
+    "body": [
+      "type Rating struct {\n\tcount int\n\tword string\n}\n",
+      "func (r *Rating) SortByRating() {\ns := []S{{1}, {3}, {5}, {2}}\nsort.Slice(s, func(i, j int) bool { return s[i].v < s[j].v })\n\nfmt.Printf(\"%#v\", s)\n}"
+      // slice sort
+    ],
+    "description": "go Sort Slice"
+  },
+
+
+  /////////////////  gRPC  /////////////////
+  //// gRPC Server
+  "go main gPRC Server": {
+    "prefix": "go-main-grpc-server",
+    "body": [
+      "package main\n",
+      "import (\n\t\"fmt\";\"log\";\"net\";\"net/rpc\";_ \"go.uber.org/zap\"\n)\n",
+      "type Listener int\n",
+      "func (l *Listener) GetLine(line []byte, reply *ServerReply) error {\n\tdata := string(line)\n\t// fmt.Printf(\"Receive: %v\\n\", data)\n\tlog.Printf(\"Receive: %v\\n\", data)\n\t*reply = Reply{data}\n\treturn nil\n}\n",
+      "//struct ServerReply for strorage Data\ntype ServerReply struct {\n\tData string\n}\n",
+      "func main() {\n\tfmt.Println(\"Hello gRPC Server\")\n\tlog.Println(\"Hello gRPC Server\")\n\tinbound := rpcSeverConfig(\"tcp\", \"0.0.0.0:32323\")\n\tlistener := new(Listener)\n\t// rpc.Register register connection to listen, accept inquiries from TCP\n\trpc.Register(listener)\n\trpc.Accept(inbound)\n}\n",
+      "func rpcSeverConfig(protocol string,address string) *net.TCPListener {\n\tendpointRPC, err := net.ResolveTCPAddr(protocol,address)\n\tif err != nil {log.Fatal(err)}\n\n\tinboundRPCendpoint, err := net.ListenTCP(protocol,endpointRPC)\n\tif err != nil {log.Fatal(err)}\n\treturn inboundRPCendpoint\n}",
+    ],
+    "description": "go gRPC Server"
+  },
+  //// gRPC Client
+  "go main gPRC Client": {
+    "prefix": "go-main-grpc-client",
+    "body": [
+      "package main\n",
+      "import (\n\t\"bufio\";\"log\";\"net/rpc\";\"os\"\n)\n",
+      "func man() {\n\tRpcClient()\n}\n",
+      "type Response struct {\n\tData string\n}\n",
+      "func rpcClientConfig(protocol string, address string) *rpc.Client {\n\tclient, err := rpc.Dial(protocol, address)\n\tif err != nil {log.Fatal(err)}\n\treturn client\n}\n",
+      "func RpcClient() {\n\tclientRPC := rpcClientConfig(\"tcp\", \"0.0.0.0:32323\")\n\tlog.Printf(\"Starting RPC Client: %+v\", clientRPC)\n\tinput := bufio.NewReader(os.Stdin)\n\tfor {\n\t\tline, _, err := input.ReadLine()\n\t\tif err != nil {log.Fatal(err)}\n\t\tvar response Response\n\t\terr = clientRPC.Call(\"Listener.GetLine\", line, &response)\n\t\tif err != nil {log.Fatal(err)}\n\t\tlog.Printf(\"Response: %v, Data: %v\", response, response.Data)\n\t}\n}\n",
+    ],
+    "description": "go gRPC Client"
+  },
+
+
+
+
+
+
+
+
+  ///////////////////////////////////
+} // EOF

@@ -1,0 +1,42 @@
+{
+  // Place your __GO__ workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and
+  // description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope
+  // is left empty or omitted, the snippet gets applied to all languages. The prefix is what is
+  // used to trigger the snippet and the body will be expanded and inserted. Possible variables are:
+  // $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders.
+  // Placeholders with the same ids are connected.
+  // Example:
+  // "Print to console": {
+  // 	"scope": "javascript,typescript",
+  // 	"prefix": "log",
+  // 	"body": [
+  // 		"console.log('$1');",
+  // 		"$2"
+  // 	],
+  // 	"description": "Log output to console"
+
+  // GO MAin
+  // https://code.visualstudio.com/docs/editor/userdefinedsnippets#_snippet-syntax
+  "docker-compose-go-app": {
+    "prefix": "docker-compose-go-app",
+    "body": [
+      "version: '3.8'",
+      "## Main Image Name and Dockerfile\nx-dockerfile: &dockerfile\n\tdeploy/docker/Dockerfile",
+      "x-image: &image\n\tgo-url-shortener:\\${TAG:-0.1\\}",
+      "x-appArgs: &appArgs\n\tDIST: alpine:edge\n\tPORT_EXPOSE: 8000\n\tAPP_NAME: go-url-shortener\n\tENTRYPOINT: deploy/entrypoint.sh\n\tSOPS_VERSION: 3.7.1",
+      "x-appVolumes: &appVolumes\n\t- .:./",
+      "x-dns: &dns\n\t- 192.168.1.1\n\t- 8.8.8.8",
+      "x-security-opts: &security-opts\n\t# To avoid issue with named volume and mounting time\n\tprivileged: true\n\t#cap_add: [ SYS_ADMIN ]\n\ttmpfs:\n\t\t- /run\n\t\t- /run/lock",
+      "## Services ##\nservices:",
+      "\t##\n\t## Go App\n\t##",
+      "\tgo-app:\n\t\tnetwork_mode: host\n\t\thostname:     \\${APP_NAME:-goapp\\}\n\t\tcontainer_name: \\${APP_NAME:-goapp\\}",
+      "\t\timage:        *image\n\t\tbuild:\n\t\t\tcontext:    ./\n\t\t\tdockerfile: *dockerfile\n\t\t\targs:\n\t\t\t\t*appArgs",
+      "\t\trestart: always\n\t\tenvironment:\n\t\t\t- HOME=/root",
+      "\t\tentrypoint: sh -c '/app/entrypoint.sh'",
+      "\t\t#volumes: *appVolumes",
+      "\t\t#dns: *dns\n\t\t# To avoid issue with named volume and mounting time\n\t\t<<: *security-opts",
+      "\t\tdepends_on:\n\t\t\t- redis",
+    ],
+    "description": "Docker Compose snippet for go-app"
+  }
+} // EOF

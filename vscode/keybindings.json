@@ -1,0 +1,122 @@
+[
+  //
+  {
+    "key": "alt+cmd+left",
+    "command": "workbench.action.previousEditor",
+    "when": "!inEditorsPicker"
+  },
+  {
+    "key": "alt+cmd+right",
+    "command": "workbench.action.nextEditor",
+    "when": "!inEditorsPicker"
+  },
+  //modify Ctrl+Tab to cycle through all open editors, not just the ones in the current group.
+  {
+    "key": "ctrl+tab",
+    "command": "workbench.action.quickOpenPreviousRecentlyUsedEditor",
+    "when": "!inEditorsPicker"
+  },
+  {
+    "key": "ctrl+shift+tab",
+    "command": "workbench.action.quickOpenLeastRecentlyUsedEditor",
+    "when": "!inEditorsPicker"
+  },
+  {
+    "key": "ctrl+k ctrl+u",
+    "command": "editor.action.transformToUppercase",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "ctrl+k ctrl+l",
+    "command": "editor.action.transformToLowercase",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "cmd+s",
+    "command": "searchEditorApplyChanges.apply",
+    "when": "referenceSearchVisible || inReferenceSearchEditor"
+  },
+  {
+    "key": "cmd+=",
+    "command": "editor.action.fontZoomIn"
+  },
+  {
+    "key": "cmd+-",
+    "command": "editor.action.fontZoomOut"
+  },
+  {
+    "key": "cmd+backspace",
+    "command": "editor.action.fontZoomReset"
+  },
+  {
+    "key": "shift+cmd+-",
+    "command": "workbench.action.zoomOut"
+  },
+  {
+    "key": "cmd+numpad_subtract",
+    "command": "-workbench.action.zoomOut"
+  },
+  {
+    "key": "shift+cmd+numpad_add",
+    "command": "workbench.action.zoomIn"
+  },
+  {
+    "key": "cmd+numpad_add",
+    "command": "-workbench.action.zoomIn"
+  },
+  {
+    "key": "shift+cmd+-",
+    "command": "-workbench.action.zoomOut"
+  },
+  {
+    "key": "cmd+-",
+    "command": "-workbench.action.zoomOut"
+  },
+  {
+    "key": "ctrl+shift+tab",
+    "command": "-workbench.action.quickOpenLeastRecentlyUsedEditorInGroup"
+  },
+  {
+    "key": "ctrl+shift+tab",
+    "command": "workbench.action.quickOpenLeastRecentlyUsedEditor"
+  },
+  {
+    "key": "alt+cmd+left",
+    "command": "workbench.action.previousEditor",
+    "when": "!inEditorsPicker"
+  },
+  {
+    "key": "alt+cmd+left",
+    "command": "-workbench.action.previousEditor"
+  },
+  {
+    "key": "alt+cmd+9",
+    "command": "workbench.action.toggleEditorWidths"
+  },
+  {
+    "key": "alt+cmd+8",
+    "command": "workbench.action.maximizeEditor"
+  },
+  {
+    "key": "alt+`",
+    "command": "workbench.action.toggleMaximizedPanel"
+  },
+  {
+    "key": "ctrl+`",
+    "command": "-workbench.action.terminal.toggleTerminal",
+    "when": "terminal.active"
+  },
+  {
+    "key": "ctrl+`",
+    "command": "workbench.action.togglePanel"
+  },
+  {
+    "key": "cmd+j",
+    "command": "-workbench.action.togglePanel"
+  },
+  {
+    "key": "alt+f",
+    "command": "editor.actions.findWithArgs"
+  }
+]
+// Empty
