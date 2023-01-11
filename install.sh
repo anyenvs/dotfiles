@@ -10,9 +10,11 @@
 #dirname $0
 #dirname $(readlink -f ${BASH_SOURCE:-$0})
 #dirname $(realpath ${BASH_SOURCE:-$0})
-export DOTFILES_PATH="$(dirname $(realpath ${BASH_SOURCE:-$0}))";
+#export DOTFILES_PATH="$(dirname $(readlink -f ${BASH_SOURCE:-$0}))";
+export DOTFILES_PATH="$( (ls -d ${DOTFILES_PATH:-.}/_helpers 2>/dev/null || ls -d ${DOTFILES_PATH:-..}/_helpers 2>/dev/null) | xargs dirname )"
 cd "$DOTFILES_PATH" ; ls *.env &>/dev/null && . *.env || true
-export A_COMMON_FUNCTIONS=($(find "${DOTFILES_PATH:-.}"/ -name a_common_functions.bash 2>/dev/null));. $A_COMMON_FUNCTIONS
+export _HELPERS=($(find "${DOTFILES_PATH}/_helpers" -name *.bash 2>/dev/null));
+for h in ${_HELPERS[@]} ;do . "$h" ;done
 
 ###
 # Install dependencies

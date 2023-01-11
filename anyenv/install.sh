@@ -3,7 +3,7 @@
 #set -e
 set -x
 ls *.env &>/dev/null && . *.env || true
-DOTFILES_PATH="${DOTFILES_PATH:-$(realpath ..)}"
+DOTFILES_PATH="${DOTFILES_PATH:-$(readlink -f ..)}"
 test -z "${A_COMMON_FUNCTIONS}" && A_COMMON_FUNCTIONS=($(find "${DOTFILES_PATH}"/ -name a_common_functions.bash 2>/dev/null)) ;. $A_COMMON_FUNCTIONS
 test -n "$A_COMMON_FUNCTIONS" || _error "===> ❌ A_COMMON_FUNCTIONS env var is missing in $0"
 export COMPDIR=/etc/bash_completion.d
@@ -16,6 +16,7 @@ set +x
 _ANYENV_ENVS=(
   ANYENV
   KREW
+  GLOBALENV
   GOENV PYENV JENV NODENV TFENV BAZELENV
   HELMENV HELMFILENV ISTIOENV
   #OPSDKENV
@@ -28,7 +29,7 @@ for env in ${_ANYENV_ENVS[@]^^} ;do val=$(env|grep "${env^^}_ROOT="|head -1) ; t
 #export ANYENV_ENVS=$KREW_ROOT/bin:$GOENV_ROOT/bin:$GOENV_ROOT/shims:$PYENV_ROOT/bin:$PYENV_ROOT/shims:$JENV_ROOT/bin:$JENV_ROOT/shims:$NODENV_ROOT/bin:$NODENV_ROOT/shims:$TFENV_ROOT/bin:$TFENV_ROOT/shims:$BAZELENV_ROOT/bin:$BAZELENV_ROOT/shims:$HELMENV_ROOT/bin:$HELMENV_ROOT/shims:$HELMFILENV_ROOT/bin:$HELMFILENV_ROOT/shims:$ISTIOENV_ROOT/bin:$ISTIOENV_ROOT/shims
 export GO111MODULE=on CGO_ENABLED="0" GOBIN=${HOME}/go/bin GOPATH=${HOME}/.go
 export PATH=$(echo -n "$HOME/bin:$HOME/.local/bin:$ANYENV_ROOT/bin:$ANYENV_ENVS:$PATH" | awk -v RS=: -v ORS=: '!x[$0]++' | sed "s/\(.*\).\{1\}/\1/")
-echo -e 'verbose=off \nprogress=bar:force:noscroll \nshow_progress=on \n' > ~/.wgetrc; cat ~/.wgetrc ;
+echo -e 'verbose=off \nprogress=bar:force:noscroll \nshow_progress=on \ncheck_certificate=off\n' > ~/.wgetrc; cat ~/.wgetrc ;
 #eval which {git,gpg,wget} || getInstaller install wget gnupg2 git-core -y;
 
 #_aptget(){ set_stat=$- ; set +x ; [[ $set_stat =~ [x] ]] && { set +x ; set_x_true=1 ; }; local _aptget=({$(command -v apt-get),$(command -v apt),$(command -v yum),$(command -v brew)}); echo ${_aptget[${1:-0}]}; test -z "$set_x_true" || { unset set_x_true;set -x ; }; }  # get possible package manager in order: echo ${_apt[*]} ${_apt[@]} ${!_apt[@]}

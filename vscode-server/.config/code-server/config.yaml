@@ -1,0 +1,28 @@
+# cat ~/.config/code-server/config.yaml
+bind-addr: 0.0.0.0:8080
+auth: ENC[AES256_GCM,data:SwOzTqzyX/c=,iv:mW4R+Q8kbOZmEHtssjnfk90S4y/QCEglOiJDIiPCz7g=,tag:bEmhIRzMXP72+Y9eo8rsqQ==,type:str]
+password: ENC[AES256_GCM,data:Ph7mHg==,iv:f5bgdRHmjuveszY6AplSR0NzS3OdJDqfiwc45xKYCsg=,tag:HcskLnFDbFQhiO2j1dZQ+w==,type:str]
+cert: ENC[AES256_GCM,data:Yy7maWA=,iv:ucbdBNTfzSisK0nLfacIVz6WNmd5vLGoKCyYsgDWIVI=,tag:BPvmFtGE8Y9UJnmjsXKAqw==,type:bool]
+sops:
+    kms: []
+    gcp_kms: []
+    azure_kv: []
+    hc_vault: []
+    age: []
+    lastmodified: "2023-01-09T18:46:25Z"
+    mac: ENC[AES256_GCM,data:XG0LdCqedazu31OCno1lL8UxpE0YEk+8Hj0tsOK47MEQZO6t0EZEDECvM8ZLm7+6vhddkW5HofnJTt3nwpr7rl3LtfNTwUxCdjgJXljmCWPcNtxv/8ToIICR+WRZjCPF8ZcUwAg0UpuyCFgt4xGHdMtzN03IAteo7m0Y4XxLz+U=,iv:8bcYYX3cCxhppYbkU+r39vRBylS0LNOKi1qZr7yH790=,tag:rKrq2zNoTCKSKsrrN8m2kQ==,type:str]
+    pgp:
+        - created_at: "2023-01-09T18:46:25Z"
+          enc: |
+            -----BEGIN PGP MESSAGE-----
+
+            hF4DDt56RZ8MJt4SAQdAQU4eg8cQ5jVaEo5BjM86SKIb6mNZLM4qv3FtZg0aAWsw
+            y5+KWMPBATlTg/7h+Of/smkCJEFD5jvu8Qr4rUSZlt/3SPFrhCeVPfDQn7DeTt8V
+            1GgBCQIQKUTtDbJcVB5QzxkQ6aP+lY3Jm5Inrj5s97MT7e5CXpw05PNOMdN0JU+B
+            VBXaMYUnCQv7mr9zzRWaXskB/HhRPKYYObnhSqIUKieGx+7wNOcdfP7hE4PxrAW5
+            eIAFbqnH8FJpOQ==
+            =ITj1
+            -----END PGP MESSAGE-----
+          fp: 36DE0A4E635B7B64E467D76BFABD63042C0A1E6A
+    encrypted_regex: ^(data|stringData|password|auth|cert|tlsCert|w3sre.*|clarity|license.*|.*(secret|access).*key)$
+    version: 3.7.3
