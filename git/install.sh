@@ -2,7 +2,7 @@
 
 #set -e
 ls *.env &>/dev/null && . *.env || true
-DOTFILES_PATH="${DOTFILES_PATH:-$(realpath ..)}"
+DOTFILES_PATH="${DOTFILES_PATH:-$(readlink -f ..)}"
 test -z "${A_COMMON_FUNCTIONS}" && A_COMMON_FUNCTIONS=($(find "${DOTFILES_PATH}"/ -name a_common_functions.bash 2>/dev/null));. $A_COMMON_FUNCTIONS;
 test -n "$A_COMMON_FUNCTIONS" || _error "===> ❌ A_COMMON_FUNCTIONS env var is missing in $0"
 
@@ -20,11 +20,11 @@ _git-configs() {
     test -f "${HOME}/.gitignore" && {
         _log "===> File exist: $(ls -l ${HOME}/.gitignore)" ;
         return ;
-    } || ln -svnf "${DOTFILES_PATH}"/git/cfg/.gitignore ${HOME}/.gitignore
+    } || ln -svnf $( readlink -f "${DOTFILES_PATH}"/git/cfg/.gitignore ) ${HOME}/.gitignore
     test -f "${HOME}/.gitattributes" && {
         _log "===> File exist: $(ls -l ${HOME}/.gitattributes)" ;
         return ;
-    } || ln -svnf "${DOTFILES_PATH}"/git/cfg/.gitattributes ${HOME}/.gitattributes
+    } || ln -svnf $( readlink -f "${DOTFILES_PATH}"/git/cfg/.gitattributes ) ${HOME}/.gitattributes
 }
 
 ## GH Cli config

@@ -33,6 +33,9 @@ _error() {
     [[ $_isSetX =~ 1 ]] && { unset _isSetX ; set -x ; }
 }
 
+_pbcopy() { DISPLAY=localhost:0.0 xclip -selection clipboard 2>/dev/null || echo ; }
+alias pbcopy='_pbcopy'
+
 ## Common OS validations
 _RELEASE() { . /etc/os-release ; case $ID in debian) echo "${ID^}_${VERSION_ID}" ;; ubuntu) echo "x${ID^}_${VERSION_ID}" ;; esac; set +x; }
 _myOS()    { echo -n $(uname -s | tr '[:upper:]' '[:lower:]:'|sed 's/mingw64_nt.*/windows/' ); }

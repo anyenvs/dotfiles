@@ -8,6 +8,7 @@ setuptools
 awscli
 awscli-plugin-endpoint
 awslogs
+s3transfer
 
 ## PIP mkdocs
 ## pip3 install
@@ -42,3 +43,5 @@ podman-compose
 kubernetes
 kubernetes-validate
 openshift
+#opensearchsql
+
