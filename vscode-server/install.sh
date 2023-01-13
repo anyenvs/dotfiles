@@ -21,6 +21,16 @@ test -d "${DOTFILES_PATH}/vscode/.vscode"
 
 _vscode-server-install() {
     curl -fsSL https://code-server.dev/install.sh | sed '/arm64)/ i \\tarmv7l) return 0 ;;' | sh
+    set +x
+}
+
+_vscode-server-compose() {
+    echo -e '
+    VSCode Server Standalone install: ${DOTFILES_PATH}/vscode-server/install.sh _vscode-server-install ;
+    VSCode Server docker-compose: ( cd '${DOTFILES_PATH}'/vscode-server ; env UID=$UID GUID=$GUID MNT= docker-compose config --services ) ;
+    VSCode Server docker-compose: ( cd '${DOTFILES_PATH}'/vscode-server ; env UID=$UID GUID=$GUID docker-compose -d up code-server) ;
+    VSCode Server build docker:   ( cd '${DOTFILES_PATH}'/vscode-server ; env UID=$UID GUID=$GUID docker-compose build build-code-server) ;
+    ' ;
 }
 
 CODE_EXTENSIONS=( )
@@ -42,13 +52,11 @@ __main__() {
     ##
     echo -e '## https://github.com/coder/code-server/blob/main/docs/FAQ.md#how-do-i-debug-issues-with-code-server \n## https://coder.com/docs/code-server/latest/install#installsh \n## https://technixleo.com/running-vs-code-code-server-in-docker-docker-compose/\n## https://github.com/linuxserver/docker-code-server\n## https://hub.docker.com/r/linuxserver/code-server/tags?page=1&name=arm'
     _sops-decrypt ${DOTFILES_PATH}/vscode-server/.config/code-server/code-config.yaml ;
-    echo 'VSCode Server Standalone install: ${DOTFILES_PATH}/vscode-server/install.sh _vscode-server-install' ;
-    echo 'VSCode Server docker-compose: ( cd '${DOTFILES_PATH}'/vscode-server ; docker-compose config --services )' ;
-    echo 'VSCode Server docker-compose: ( cd '${DOTFILES_PATH}'/vscode-server ; docker-compose -d up code-server)' ;
-    echo 'VSCode Server build docker: ( cd '${DOTFILES_PATH}'/vscode-server ; docker-compose build build-code-server)' ;
+    _vscode-server-compose ;
 }
 # ######
 # Main
 # ######
 test -n "$1" && $1 || __main__
 set +x
+

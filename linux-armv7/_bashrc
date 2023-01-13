@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+
+PATH=$HOME/.local/bin:$HOME/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/bin:$PATH
+export OPKG_ROOT=/opt/opkg
+export PATH=$(echo -n "$HOME/.local/bin:$HOME/bin:$PATH:${OPKG_ROOT}/bin:${OPKG_ROOT}/sbin" | awk -v RS=: -v ORS=: '!x[$0]++' | sed "s/\(.*\).\{1\}/\1/")
+export TERM=xterm
+export DISK1=/mnt/HD/HD_a2 DISK2=/mnt/HD/HD_b2
+export DATA_1=/mnt/HD/HD_a2/DATA_1
+export DATA_1_APPS=${DATA_1}/opt/repos/_dotfiles
+export DATA_1_ARMV7=${DATA_1_APPS}/linux-armv7 DATA_1_ARMV7_TOOLS=${DATA_1_APPS}/linux-armv7/armv7-android-tools
+export BASHRC=${DATA_1_APPS}/linux-armv7/_bashrc
+export PORTAINER_DATA=${DISK1}/Nas_Prog/docker/portainer
+export PORTAINER_COMPOSE=${PORTAINER_DATA}/compose
+
+###--- General .bashrc
+## bash to stop escaping $ during tab completion
+shopt -s direxpand   ## will resolve and expand to full path
+shopt -s progcomp     ##  will keep variable yet allow to path
+#shopt -u progcomp    ## !!! might break fzf !!
+
+#--- determine the character sequence enter :cat: ,then pressing the key you're interested in.
+#--- ^[ represents Esc
+bind '"\e[A": history-search-backward'
+bind '"\e[B": history-search-forward'
+#bind '"\e[1;9D": backward-word'
+#bind '"\e[1;9C": forward-word'
+#bind '"\eOC":forward-word'
+#bind '"\eOD":backward-word'
+bind '"\e\e[D": backward-word'
+bind '"\e\e[C": forward-word'
+##
+bind 'set show-all-if-ambiguous on'
+bind 'TAB:menu-complete'
+#bind -x '"\t": fzf_bash_completion'
+
+# Setup some environment variables.
+# https://www.redhat.com/sysadmin/history-command
+export HISTSIZE=9999
+export HISTFILE=~/.bash_history
+export HISTCONTROL=ignoredups
+export HISTIGNORE="&:[bf]g:exit:API_(KEY|TOKEN):AWS_:IBMCLOUD_:IC_API_"
+shopt -s histappend
+
+## sync bash history across terminals
+history() { _bash_history_sync ; builtin history "$@" ; }
+_bash_history_sync() {
+  builtin history -a         #1
+  HISTFILESIZE=$HISTSIZE     #2
+  builtin history -c         #3
+  builtin history -r         #4
+}
+
+###--- Generic Aliases
+alias lla='ls -altrhFc --group-directories-first' ; alias lls='lla'
+_envgrep() { env | grep --color=auto -i --color $@; }
+alias envg='_envgrep'
+_which() { local _cmd=$(which $1); [[ -z "$_cmd" ]] || ls --color=auto -l $_cmd; }
+alias wls='_which'
+alias hg='_historygrep'
+_historygrep() { history | grep --color=auto -i --color "$@"; }
+alias g='git'
+alias gs='git fetch --all;git status -uno; BRANCH=$(git rev-parse --abbrev-ref HEAD |tr -d "\n");echo -n $BRANCH |pbcopy;set +x'
+alias gd='git diff --no-ext-diff -w HEAD'
+
+###--- Main
+test -d /opt/DATA_1 || ( cd /opt ; ln -svnf ${DATA_1} DATA_1 )
+test -d /otp || ( path=$_ ; cd / ; ln -svnf ${DATA_1_APPS}/linux-armv7/${path##*/} ${path##*/} )
+
+_dotfiles-repo() {
+    test -d ${DATA_1}/opt/repos/_dotfiles || { echo "Please clone DOTFILES Repo\n git clone --branch=main --depth=1 https://x-token-auth@github.com/anyenvs/dotfiles.git ${DATA_1}/opt/repos/_dotfiles" ; exit 1; }
+    test -f ${DATA_1}/_dotfiles || ( cd $DATA_1 ; ln -svnf ${DATA_1}/opt/repos/_dotfiles _dotfiles )
+    test -f ~/.bashrc || ( cd ~ ; ln -svnf ${BASHRC} .bashrc || exit 1 )
+    set +x
+}
+
+_armv7-configs() {
+    test -f ~/.bashrc || ( cd ~ ; ln -svnf ${BASHRC} .bashrc || exit 1 )
+    for f in bash_history htoprc gitconfig wgetrc vimrc ;do ( cd ~ ; test -f .${f} || ln -svnf ${DATA_1_APPS}/linux-amd64/_${f} .${f} ) ;done
+    for d in config cache local ssh vim ;do ( cd ~ ; test -d .${d} || ln -svnf ${DATA_1}/opt/.${d} .${d} ) ;done
+    set +x
+}
+
+_armv7-tools() {
+    test -d "${DATA_1_ARMV7_TOOLS}" || echo "git clone --branch=main --depth=1 https://x-token-auth@github.com/anyenvs/armv7-android-tools.git ${DATA_1_ARMV7_TOOLS}"
+    #echo "git clone --branch=main --depth=1 https://github.com/Allespro/armv7-android-tools.git ${DATA_1_ARMV7_TOOLS}"
+    for i in ${DATA_1_ARMV7_TOOLS}/bin/* ;do eval which ${i##*/} || ( cd /usr/local/bin ; test -f ${f} && ln -svnf ${f} ${i##*/} ; chmod +x ${i##*/} ) ;done
+    ## ArmV7 Libraries
+    for i in lib ;do ( cd ${DATA_1_ARMV7_TOOLS} ; test -d ${i} && cp -fv ${i}/lib* /lib/ ) ;done
+    for i in lib/git-core.tar.gz ;do ( cd ${DATA_1_ARMV7_TOOLS} ; test -f ${i} && tar zxvf ${i} -C /lib/ ) ;done
+    eval which {/usr/local/bin/busybox,} || ( f=/usr/local/bin/busybox ; wget -qO $f http://bin.entware.net/armv7sf-k3.2/installer/chroot/${f##*/} ; chmod +x $f ; $f --install ${f%/*} )
+    set +x
+}
+
+## opkg
+_opkg-dirs() { local _dirs="${@:-bin etc home lib libexec pkg root sbin share tmp usr var}" ;( cd /opt ; for d in ${_dirs}; do test -d ${d} || ln -svnf opkg/${d} ${d} ;done ) ; }
+_opkg-install() {
+    test -d /opt/opkg || ( path=$_ ; cd ${path%/*} ; ln -svnf ${DATA_1_APPS}/linux-armv7/${path##*/} ${path##*/} )
+    _opkg-dirs bin etc home lib libexec pkg root sbin share tmp usr var
+    eval which {opkg,} || ( wget -qO- https://bin.entware.net/armv7sf-k3.2/installer/alternative.sh | sed 's%/opt%/opt/pkg%g; /wget.*etc\/opkg.conf/ a \\nsed -i "s%/opt%/opt/opkg%g" /opt/pkg/etc/opkg.conf;\nfor i in bin etc home lib libexec pkg root sbin share tmp usr var; do cd /opt ; ln -svnf opkg/${i} ${i} ;done' | bash )
+    set +x
+}
+
+## anyenv
+_anyenv-install() {
+    ## anyenv
+    test -d ~/.anyenv -a -f ~/.anyenvrc || ( cd ~ ; ln -svnf ${DATA_1}/opt/.anyenv .anyenv ; ln -svnf ln -svnf ${DATA_1}/opt/_anyenvrc .anyenvrc ) ;
+    test -f ~/.anyenvrc && . ~/.anyenvrc ;
+    test -d ~/.anyenv && anyenv envs | xargs -n1 anyenv install --force --link ;
+    set +x ;
+}
+
+#export GIT_TRACE2=2 GIT_CURL_VERBOSE=1
+###--- Main ---###
+__main__() {
+    ###--- dirs
+    test -d /opt/DATA_1 || ( cd /opt ; ln -svnf ${DATA_1} DATA_1 )
+    test -d /otp || ( path=$_ ; cd / ; ln -svnf ${DATA_1_APPS}/linux-armv7/${path##*/} ${path##*/} )
+
+    _dotfiles-repo  || exit 1 ;
+    _armv7-configs  || exit 1 ;
+    _armv7-tools    || exit 1 ;
+    _opkg-install   || exit 1 ;
+    _anyenv-install || exit 1 ;
+}
+# ######
+# Main
+# ######
+test -n "$1" && $1 || __main__
+set +x
+
+## Completions
+for f in ~/.*env/completions/*.${SHELL##*/}; do source $f 2>/dev/null; done
