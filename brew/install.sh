@@ -37,11 +37,15 @@ _BREW_PACKAGES=(
     iam-policy-json-to-terraform
     reattach-to-user-namespace
     sops
-    # other plugins & tools
+    ## needed to build openshift-client
+    gpgme heimdal
+    ## other plugins & tools
     curl wget
     pinentry watch
     osx-cpu-temp
     task tldr
+    ## ip tools , networking
+    iproute2mac
     # nmap
     # mysql-client pgloader postgresql@14
     # glow hugo
@@ -69,7 +73,7 @@ _add-linuxbrew-user() {
 }
 
 _brew-install() {
-    echo -e 'verbose=off \nprogress=bar:force:noscroll \nshow_progress=on \n' > ~/.wgetrc; cat ~/.wgetrc ;
+    echo -e 'verbose=off \nprogress=bar:force:noscroll \nshow_progress=on \ncheck_certificate=off\n' > ~/.wgetrc; cat ~/.wgetrc ;
     eval which {git,gcc,make} || _install git-core make gcc g++ gawk bison libreadline-dev libffi-dev libtool ;
     eval which {curl,wget,sudo} || _install apt-transport-https ca-certificates curl sudo wget
     ##

@@ -41,7 +41,7 @@ echo -e 'verbose=off \nprogress=bar:force:noscroll \nshow_progress=on \ncheck_ce
 _setup_anyenv() {
     local anyenvs=(goenv jenv nodenv pyenv tfenv bazelenv helmenv helmfilenv)
     test -n "${ANYENV_ENVS}" && export PATH=$(echo -n "$HOME/bin:$HOME/.local/bin:$ANYENV_ROOT/bin:$ANYENV_ENVS:$PATH" | awk -v RS=: -v ORS=: '!x[$0]++' | sed "s/\(.*\).\{1\}/\1/")
-    echo -e 'verbose=off \nprogress=bar:force:noscroll \nshow_progress=on \n' > ~/.wgetrc; cat ~/.wgetrc ;
+    echo -e 'verbose=off \nprogress=bar:force:noscroll \nshow_progress=on \ncheck_certificate=off\n' > ~/.wgetrc; cat ~/.wgetrc ;
     eval which {git,gpg,wget} || _Install install wget gnupg2 git-core ;
     _log "===> anyenv install -l | xargs -n1 anyenv install --force --link \n ===> echo ${anyenvs[@]} | xargs -n1 anyenv install --force --link \n ===> _setup_completions \$(anyenv envs | xargs) \n ===> anyenv install -l" ;
     _log "===> _setup_completion ANYENV \$(anyenv envs | xargs)" ;

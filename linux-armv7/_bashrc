@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-PATH=$HOME/.local/bin:$HOME/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/bin:$PATH
+PATH=$HOME/.local/bin:$HOME/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/bin:/lib/git-core:$PATH
 export OPKG_ROOT=/opt/opkg
 export PATH=$(echo -n "$HOME/.local/bin:$HOME/bin:$PATH:${OPKG_ROOT}/bin:${OPKG_ROOT}/sbin" | awk -v RS=: -v ORS=: '!x[$0]++' | sed "s/\(.*\).\{1\}/\1/")
 export TERM=xterm
@@ -52,12 +52,10 @@ _bash_history_sync() {
 
 ###--- Generic Aliases
 alias lla='ls -altrhFc --group-directories-first' ; alias lls='lla'
-_envgrep() { env | grep --color=auto -i --color $@; }
-alias envg='_envgrep'
-_which() { local _cmd=$(which $1); [[ -z "$_cmd" ]] || ls --color=auto -l $_cmd; }
-alias wls='_which'
-alias hg='_historygrep'
-_historygrep() { history | grep --color=auto -i --color "$@"; }
+_envgrep() { env | grep --color=auto -i --color $@; } ; alias envg='_envgrep' ;
+_historygrep() { history | grep --color=auto -i --color "$@"; } ; alias hg='_historygrep' ;
+_pbcopyLinuxXSel() { xsel --clipboard --input 2>/dev/null || echo; } ; alias pbcopy=' _pbcopyLinuxXSel' ;
+_which() { local _cmd=$(which $1); [[ -z "$_cmd" ]] || ls --color=auto -l $_cmd; } ; alias wls='_which' ;
 alias g='git'
 alias gs='git fetch --all;git status -uno; BRANCH=$(git rev-parse --abbrev-ref HEAD |tr -d "\n");echo -n $BRANCH |pbcopy;set +x'
 alias gd='git diff --no-ext-diff -w HEAD'
@@ -83,10 +81,10 @@ _armv7-configs() {
 _armv7-tools() {
     test -d "${DATA_1_ARMV7_TOOLS}" || echo "git clone --branch=main --depth=1 https://x-token-auth@github.com/anyenvs/armv7-android-tools.git ${DATA_1_ARMV7_TOOLS}"
     #echo "git clone --branch=main --depth=1 https://github.com/Allespro/armv7-android-tools.git ${DATA_1_ARMV7_TOOLS}"
-    for i in ${DATA_1_ARMV7_TOOLS}/bin/* ;do eval which ${i##*/} || ( cd /usr/local/bin ; test -f ${f} && ln -svnf ${f} ${i##*/} ; chmod +x ${i##*/} ) ;done
+    for f in ${DATA_1_ARMV7_TOOLS}/bin/* ;do eval which ${f##*/} || ( cd /usr/local/bin ; test -f ${f} && ln -svnf ${f} ${f##*/} ; chmod +x ${f##*/} ) ;done
     ## ArmV7 Libraries
-    for i in lib ;do ( cd ${DATA_1_ARMV7_TOOLS} ; test -d ${i} && cp -fv ${i}/lib* /lib/ ) ;done
-    for i in lib/git-core.tar.gz ;do ( cd ${DATA_1_ARMV7_TOOLS} ; test -f ${i} && tar zxvf ${i} -C /lib/ ) ;done
+    for i in ${DATA_1_ARMV7_TOOLS}/lib/lib* ;do ( cd ${DATA_1_ARMV7_TOOLS} ; test -d ${i} -a ! -f /lib/${i##*/} && cp -fv ${i} /lib/ ) ;done
+    for i in ${DATA_1_ARMV7_TOOLS}/lib/git-core.tar.gz ;do ( cd ${DATA_1_ARMV7_TOOLS} ; test -f ${i} -a ! -d /lib/git-core && tar zxvf ${i} -C /lib/ ) ;done
     eval which {/usr/local/bin/busybox,} || ( f=/usr/local/bin/busybox ; wget -qO $f http://bin.entware.net/armv7sf-k3.2/installer/chroot/${f##*/} ; chmod +x $f ; $f --install ${f%/*} )
     set +x
 }
@@ -94,7 +92,7 @@ _armv7-tools() {
 ## opkg
 _opkg-dirs() { local _dirs="${@:-bin etc home lib libexec pkg root sbin share tmp usr var}" ;( cd /opt ; for d in ${_dirs}; do test -d ${d} || ln -svnf opkg/${d} ${d} ;done ) ; }
 _opkg-install() {
-    test -d /opt/opkg || ( path=$_ ; cd ${path%/*} ; ln -svnf ${DATA_1_APPS}/linux-armv7/${path##*/} ${path##*/} )
+    test -d /opt/opkg || ( path=$_ ; cd ${path%/*} ; ln -svnf ${DATA_1}/opt/${path##*/} ${path##*/} )
     _opkg-dirs bin etc home lib libexec pkg root sbin share tmp usr var
     eval which {opkg,} || ( wget -qO- https://bin.entware.net/armv7sf-k3.2/installer/alternative.sh | sed 's%/opt%/opt/pkg%g; /wget.*etc\/opkg.conf/ a \\nsed -i "s%/opt%/opt/opkg%g" /opt/pkg/etc/opkg.conf;\nfor i in bin etc home lib libexec pkg root sbin share tmp usr var; do cd /opt ; ln -svnf opkg/${i} ${i} ;done' | bash )
     set +x

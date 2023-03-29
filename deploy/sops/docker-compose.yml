@@ -1,0 +1,101 @@
+
+##
+## https://technixleo.com/running-vs-code-code-server-in-docker-docker-compose/
+## https://hub.docker.com/r/linuxserver/code-server
+## https://github.com/linuxserver/docker-code-server/blob/master/Dockerfile.armhf
+##
+version: '3.8'
+## Main Image Name and Dockerfile
+x-dockerfile: &dockerfile
+  ${MNT:-.}/Dockerfile
+  #${MNT:-.}/Dockerfile.alpine
+x-image: &image
+  sops:debian
+  #sops:alpine
+## Arguments
+x-monorepoArgs: &monorepoArgs
+  MNT:  ${MNT}
+  TZ: America/New_York
+  ## Upgraded to go v1.17
+  ## https://hub.docker.com/_/golang/tags?page=1&name=1.17
+  DIST: ${DIST:-golang:1.17.13-bullseye}
+  #DIST: ${DIST:-golang:1.17.13-alpine}
+  #DIST: ${DIST:-arm32v7-4.9.1}
+x-monorepoVolumes: &monorepoVolumes
+  #- /mnt/HD/HD_a2/DATA_1/opt/repos:/opt/repos
+  - /opt/repos:/opt/repos
+  - /opt/repos/_dotfiles/vscode-server/config:/config
+x-security-opts: &security-opts
+  privileged: true
+  cap_add:
+    - SYS_ADMIN
+    - SYS_PTRACE
+  security_opt:
+    ## https://docs.docker.com/engine/security/seccomp/
+    #- seccomp=/path/to/seccomp/profile.json
+    - seccomp=unconfined
+    - seccomp:unconfined
+    - label:disable
+  tmpfs:
+    - /run
+    - /run/lock
+x-deploy: &deploy
+  resources:
+    limits:
+      cpus: '1'
+      memory: 1012M
+    reservations:
+      cpus: '0.25'
+      memory: 128M
+##================================================================================##
+##  SERVICES  ##
+services:
+  ### VSCODE-SERVER
+  sops-apline:
+    ## https://github.com/containers/podman/blob/main/docs/tutorials/basic_networking.md
+    #network_mode:  host
+    #network_mode:  bridge
+    hostname:       sops
+    container_name: sops
+    #image:          *image
+    image:          sops:alpine
+    restart:        unless-stopped
+    #restart:       always
+    entrypoint:     echo Started && sleep infinity
+    deploy:
+      <<: *deploy
+    ports:
+      - 8443:8443
+    # To avoid issue with named volume and mounting time
+    <<: *security-opts
+    #privileged: true
+    #cap_add: [ SYS_ADMIN ]
+    environment:
+      <<: *monorepoArgs
+      TZ: America/New_York
+      #PUID: ${PUID:-$UID}
+      #PGID: ${PGID:-$GUID}
+    volumes: *monorepoVolumes
+  sops-debian:
+    #image:         *image
+    image:          sops:debian
+    build:
+      #network:     host
+      context:      ./
+      dockerfile:   *dockerfile
+      args:
+        <<: *monorepoArgs
+    restart:        unless-stopped
+    #restart:       always
+    entrypoint:
+      - echo Started && sleep infinity ;
+    deploy:
+      <<: *deploy
+    # To avoid issue with named volume and mounting time
+    <<: *security-opts
+    #privileged: true
+    #cap_add: [ SYS_ADMIN ]
+    environment:
+      <<: *monorepoArgs
+      TZ: America/New_York
+

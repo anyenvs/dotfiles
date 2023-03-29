@@ -9,8 +9,8 @@ x-dockerfile: &dockerfile
   #${MNT:-.}/Dockerfile.armhf
   ${MNT:-.}/Dockerfile
 x-image: &image
-  lscr.io/linuxserver/code-server:${DIST:-latest}
-  #lscr.io/linuxserver/code-server:${DIST:-arm32v7-4.9.1}
+  ${DIST:-lscr.io/linuxserver/code-server:latest}
+  #${DIST:-lscr.io/linuxserver/code-server:arm32v7-4.9.1}
   #code-server:${DIST:-arm32v7-4.9.1}
 ## DEBUG BASE Image
 #x-imageDebug: &imageDebug
@@ -22,16 +22,7 @@ x-monorepoArgs: &monorepoArgs
   #CODE_RELEASE: 4.9.1
 x-monorepoVolumes: &monorepoVolumes
   #- ..:/opt/repos
-  #- .config/docker-config.json:/root/.docker/docker-config.json  ##gitignore
-  #- .config/kube-config.yml:/root/.kube/config                   ##gitignore
   #### local config mappings
-  #- .config/.bash_history:/root/.bash_history                                                          ##gitignore
-  #- ${MNT}${HOME}/work/repos:/opt/repos                                                                ##gitignore
-  #- ${MNT}${HOME}/work/repos/.devcontainer/.config/docker-config.json:/root/.docker/docker-config.json ##gitignore
-  #- ${MNT}${HOME}/work/repos/.devcontainer/.config/kube-config.yml:/root/.kube/config                  ##gitignore
-  #- ${MNT}${HOME}/work/repos/.devcontainer/.config/gitconfig:/root/.gitconfig                          ##gitignore
-  #- ${MNT}${HOME}/work/repos/.devcontainer/.config/gnupg:/root/.gnupg                                  ##gitignore
-  #- ${MNT}${HOME}/work/repos/.devcontainer/.config/.bash_history:/root/.bash_history                   ##gitignore
   #- /path/to/appdata/config:/config
   #- /mnt/HD/HD_a2/DATA_1/opt/repos:/opt/repos
   - /opt/repos:/opt/repos
@@ -47,6 +38,16 @@ x-security-opts: &security-opts
   tmpfs:
     - /run
     - /run/lock
+x-deploy: &deploy
+  resources:
+    limits:
+      cpus: '1'
+      memory: 1012M
+    reservations:
+      cpus: '0.25'
+      memory: 128M
+##================================================================================##
+##  SERVICES  ##
 services:
   ### VSCODE-SERVER
   code-server:
@@ -56,38 +57,33 @@ services:
     hostname:       code-server
     container_name: code-server
     image:          *image
+    restart:        unless-stopped
+    #restart:       always
     #entrypoint:     echo Started && sleep infinity
-    restart: unless-stopped
-    #restart: always
     ports:
       - 8443:8443
     deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1012M
-        reservations:
-          cpus: '0.25'
-          memory: 128M
+      <<: *deploy
     # To avoid issue with named volume and mounting time
     privileged: true
     #<<: *security-opts
     #cap_add: [ SYS_ADMIN ]
     environment:
-      - PUID=${PUID:-$UID}
-      - PGID=${PGID:-$GUID}
-      - TZ=America/New_York
-      - PASSWORD=changeit #optional changeit
-      - HASHED_PASSWORD= #optional changeit
-      - SUDO_PASSWORD=changeit #optional changeit
-      - SUDO_PASSWORD_HASH= #optional changeit
-      #- PROXY_DOMAIN=code-server.wdcloud.local #optional
-      - PROXY_DOMAIN=wdcloud.local #optional
-      - DEFAULT_WORKSPACE=/config/workspace #optional
+      <<: *monorepoArgs
+      TZ: America/New_York
+      PUID: ${PUID:-$UID}
+      PGID: ${PGID:-$GUID}
+      PASSWORD: changeit #optional changeit
+      HASHED_PASSWORD: "" #optional changeit
+      SUDO_PASSWORD: changeit #optional changeit
+      SUDO_PASSWORD_HASH: "" #optional changeit
+      #PROXY_DOMAIN: code-server.wdcloud.local #optional
+      PROXY_DOMAIN: wdcloud.local #optional
+      DEFAULT_WORKSPACE: /config/workspace #optional
     volumes: *monorepoVolumes
   build-code-server:
     #image:        *image
-    image:          code-server:${DIST:-arm32v7-4.9.1}
+    image:          ${DIST:-code-server:arm32v7-4.9.1}
     build:
       #network:    host
       context:    docker/

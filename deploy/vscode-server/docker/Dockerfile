@@ -1,17 +1,20 @@
 ## https://github.com/linuxserver/docker-code-server/blob/master/Dockerfile
 ## https://github.com/coder/code-server/releases
-FROM ghcr.io/linuxserver/baseimage-ubuntu:jammy
+ARG DIST=${DIST:-ghcr.io/linuxserver/baseimage-ubuntu:jammy}
+FROM ${DIST}
 
 # set version label
+ARG DEBIAN_FRONTEND="noninteractive"
 ARG BUILD_DATE
 ARG VERSION
 ARG CODE_RELEASE
+ARG CODE_PORT=${CODE_PORT}
 LABEL build_version="Linuxserver.io version:- ${VERSION} Build-date:- ${BUILD_DATE}"
 LABEL maintainer="aptalca"
 
 # environment settings
-ARG DEBIAN_FRONTEND="noninteractive"
-ENV HOME="/config"
+ENV HOME="/config" \
+    CODE_PORT=${CODE_PORT:-8443}
 
 RUN \
   echo "**** install runtime dependencies ****" && \
@@ -47,4 +50,4 @@ RUN \
 COPY /root /
 
 # ports and volumes
-EXPOSE 8443
+EXPOSE ${CODE_PORT}

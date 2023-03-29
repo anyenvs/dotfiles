@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 #set -e
+[ -n "$ENV_DEBUG" ] && set -x
+
 ls *.env &>/dev/null && . *.env || true
 export BASH_SOURCE_DIR="$(dirname $(readlink -f ${BASH_SOURCE:-$0}))" BASH_SOURCE_DIR_UP="$(readlink -f $(dirname $(readlink -f ${BASH_SOURCE:-$0}))/../)";
 export DOTFILES_PATH="$( readlink -f $(ls -d ${DOTFILES_PATH:-$BASH_SOURCE_DIR}/_helpers 2>/dev/null || ls -d ${DOTFILES_PATH:-$BASH_SOURCE_DIR_UP}/_helpers 2>/dev/null) | xargs dirname )"
@@ -19,7 +21,7 @@ export DATA_1_ARMV7=${DATA_1_APPS}/linux-armv7 DATA_1_ARMV7_TOOLS=${DATA_1_APPS}
 export BASHRC=${DATA_1_APPS}/linux-armv7/_bashrc
 
 _dotfiles-repo() {
-    test -d ${DATA_1}/opt/repos/_dotfiles || { echo "Please clone DOTFILES Repo\n git clone --branch=main --depth=1 https://x-token-auth@github.com/anyenvs/dotfiles.git ${DATA_1}/opt/repos/_dotfiles" ; exit 1; }
+    test -d ${DATA_1}/opt/repos/_dotfiles || { echo "Please clone DOTFILES Repo\n git clone --branch=main --depth=1 https://x-token-auth@github.com/anyenvs/dotfiles.git ${DATA_1}/opt/repos/_dotfiles" ; return 1; }
     test -f ${DATA_1}/_dotfiles || ( cd $DATA_1 ; ln -svnf ${DATA_1}/opt/repos/_dotfiles _dotfiles )
     test -f ~/.bashrc || ( cd ~ ; ln -svnf ${BASHRC} .bashrc || exit 1 )
     set +x
@@ -35,11 +37,13 @@ _armv7-configs() {
 _armv7-tools() {
     test -d "${DATA_1_ARMV7_TOOLS}" || echo "git clone --branch=main --depth=1 https://x-token-auth@github.com/anyenvs/armv7-android-tools.git ${DATA_1_ARMV7_TOOLS}"
     #echo "git clone --branch=main --depth=1 https://github.com/Allespro/armv7-android-tools.git ${DATA_1_ARMV7_TOOLS}"
-    for i in ${DATA_1_ARMV7_TOOLS}/bin/* ;do eval which ${i##*/} || ( cd /usr/local/bin ; test -f ${f} && ln -svnf ${f} ${i##*/} ; chmod +x ${i##*/} ) ;done
+    for f in ${DATA_1_ARMV7_TOOLS}/bin/* ;do eval which ${f##*/} || ( cd /usr/local/bin ; test -f ${f} && ln -svnf ${f} ${f##*/} ; chmod +x ${f##*/} ) ;done
     ## ArmV7 Libraries
-    for i in lib ;do ( cd ${DATA_1_ARMV7_TOOLS} ; test -d ${i} && cp -fv ${i}/lib* /lib/ ) ;done
-    for i in lib/git-core.tar.gz ;do ( cd ${DATA_1_ARMV7_TOOLS} ; test -f ${i} && tar zxvf ${i} -C /lib/ ) ;done
-    eval which {/usr/local/bin/busybox,} || ( f=/usr/local/bin/busybox ; wget -qO $f http://bin.entware.net/armv7sf-k3.2/installer/chroot/${f##*/} ; chmod +x $f ; $f --install ${f%/*} )
+    for i in ${DATA_1_ARMV7_TOOLS}/lib/lib* ;do ( cd ${DATA_1_ARMV7_TOOLS} ; test -f ${i} && cp -fv ${i} /lib/ ) ;done
+    for i in ${DATA_1_ARMV7_TOOLS}/lib/git-core.tar.gz ;do ( cd ${DATA_1_ARMV7_TOOLS} ; test -f ${i} -a ! -d /lib/git-core && tar zxvf ${i} -C /lib/ ) ;done
+    ## Busybox
+    eval which {/usr/local/bin/busybox,} || ( f=/usr/local/bin/busybox ; test -f $f || wget -qO $f https://raw.githubusercontent.com/anyenvs/armv7-android-tools/main/bin/${f##*/} ; chmod +x $f ; $f --install ${f%/*} )
+    eval which {/usr/local/bin/busybox,} || ( f=/usr/local/bin/busybox ; test -f $f || wget -qO $f http://bin.entware.net/armv7sf-k3.2/installer/chroot/${f##*/} ; chmod +x $f ; $f --install ${f%/*} )
     set +x
 }
 
@@ -54,7 +58,7 @@ _anyenv-install() {
 ## opkg
 _opkg-dirs() { local _dirs="${@:-bin etc home lib libexec pkg root sbin share tmp usr var}" ;( cd /opt ; for d in ${_dirs}; do test -d ${d} || ln -svnf opkg/${d} ${d} ;done ) ; }
 _opkg-install() {
-    test -d /opt/opkg || ( path=$_ ; cd ${path%/*} ; ln -svnf ${DATA_1_APPS}/linux-armv7/${path##*/} ${path##*/} )
+    test -d /opt/opkg || ( path=$_ ; cd ${path%/*} ; ln -svnf ${DATA_1}/opt/${path##*/} ${path##*/} )
     _opkg-dirs bin etc home lib libexec pkg root sbin share tmp usr var
     eval which {opkg,} || ( wget -qO- https://bin.entware.net/armv7sf-k3.2/installer/alternative.sh | sed 's%/opt%/opt/pkg%g; /wget.*etc\/opkg.conf/ a \\nsed -i "s%/opt%/opt/opkg%g" /opt/pkg/etc/opkg.conf;\nfor i in bin etc home lib libexec pkg root sbin share tmp usr var; do cd /opt ; ln -svnf opkg/${i} ${i} ;done' | bash )
     #wget -qO- https://bin.entware.net/armv7sf-k3.2/installer/alternative.sh | sed 's%/opt%/otp%g; s%bin/opkg %bin/opkg -f /otp/etc/opkg.conf %g; /wget.*etc\/opkg.conf/ a \\nsed -i "s%/opt%/otp%g" /otp/etc/opkg.conf;\nfor i in etc tmp; do ln -svnf /otp/${i} /opt/${i} ;done'
@@ -68,11 +72,11 @@ __main__() {
     test -d /opt/DATA_1 || ( cd /opt ; ln -svnf ${DATA_1} DATA_1 )
     test -d /otp || ( path=$_ ; cd / ; ln -svnf ${DATA_1_APPS}/linux-armv7/${path##*/} ${path##*/} )
 
-    _dotfiles-repo  || exit 1 ;
-    _armv7-configs  || exit 1 ;
-    _armv7-tools    || exit 1 ;
-    _opkg-install   || exit 1 ;
-    _anyenv-install || exit 1 ;
+    _dotfiles-repo  || return 1 ;
+    _armv7-configs  || return 1 ;
+    _armv7-tools    || return 1 ;
+    _opkg-install   || return 1 ;
+    _anyenv-install || return 1 ;
 }
 # ######
 # Main
