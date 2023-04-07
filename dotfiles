@@ -6,7 +6,7 @@
 export BASH_SOURCE_DIR="$(dirname $(readlink -f ${BASH_SOURCE:-$0}))" BASH_SOURCE_DIR_UP="$(readlink -f $(dirname $(readlink -f ${BASH_SOURCE:-$0}))/../)";
 export DOTFILES_PATH="$( readlink -f $(ls -d ${DOTFILES_PATH:-$BASH_SOURCE_DIR}/_helpers 2>/dev/null || ls -d ${DOTFILES_PATH:-$BASH_SOURCE_DIR_UP}/_helpers 2>/dev/null) | xargs dirname )"
 cd "$DOTFILES_PATH" ; ls *.env &>/dev/null && . *.env || true
-export _HELPERS=($(find "${DOTFILES_PATH}/_helpers" -name *.bash 2>/dev/null));
+export _HELPERS=($(find "${DOTFILES_PATH}/_helpers" -name *.bash 2>/dev/null |sort));
 for h in ${_HELPERS[@]} ;do . "$h" ;done
 
 command="${1}"
@@ -19,7 +19,7 @@ case "${command}" in
   "install")
     package="${1}"
     _log "===> 🚀 DOTFILES to install package: ${package}"
-    (cd "${DOTFILES_PATH}/${package}" && DOTFILES_PATH="${DOTFILES_PATH:-$(pwd)}" A_COMMON_FUNCTIONS=$A_COMMON_FUNCTIONS ${SHELL:-bash} ./install.sh)
+    (cd "${DOTFILES_PATH}/${package}" && DOTFILES_PATH="${DOTFILES_PATH:-$(pwd)}" _HELPERS=$_HELPERS ${SHELL:-bash} ./install.sh)
     _log "===> 🚀 DOTFILES package ::${package}:: installed"
     ;;
   *)

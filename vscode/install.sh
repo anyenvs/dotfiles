@@ -3,8 +3,8 @@
 set -e
 ls *.env &>/dev/null && . *.env || true
 DOTFILES_PATH=${DOTFILES_PATH:-.}
-test -z "${A_COMMON_FUNCTIONS}" && A_COMMON_FUNCTIONS=($(find "${DOTFILES_PATH}"/ -name a_common_functions.bash 2>/dev/null));. $A_COMMON_FUNCTIONS
-test -n "$A_COMMON_FUNCTIONS" || _error "===> ❌ A_COMMON_FUNCTIONS env var is missing in $0"
+test -z "${_HELPERS}" && _HELPERS=($(find "${DOTFILES_PATH}"/ -name _helpers.bash 2>/dev/null |sort));. $_HELPERS
+test -n "$_HELPERS" || _error "===> ❌ _HELPERS env var is missing in $0"
 
 test -d "${DOTFILES_PATH}/vscode/.vscode"
 test -f "${HOME}/Library/Application Support/Code/User/settings.json" && {

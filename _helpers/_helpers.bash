@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+[ -n "${DEBUG}" ] && { export PS4='+ [${BASH_SOURCE##*/}:${LINENO}] ' ; set -x; }
+
 _setX() { _allOpts=$- ; set +x ; [[ $_allOpts =~ [x] ]] && { set +x ; echo 'x' ; }; }  # set -x wrapper
 isSetX=$(_setX)
 test -n "${isSetX^^}" && set +x

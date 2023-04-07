@@ -4,8 +4,8 @@
 set -x
 ls *.env &>/dev/null && . *.env || true
 DOTFILES_PATH="${DOTFILES_PATH:-$(readlink -f ..)}"
-test -z "${A_COMMON_FUNCTIONS}" && A_COMMON_FUNCTIONS=($(find "${DOTFILES_PATH}"/ -name a_common_functions.bash 2>/dev/null));. $A_COMMON_FUNCTIONS
-test -n "$A_COMMON_FUNCTIONS" || _error "===> ❌ A_COMMON_FUNCTIONS env var is missing in $0"
+test -z "${_HELPERS}" && _HELPERS=($(find "${DOTFILES_PATH}"/ -name _helpers.bash 2>/dev/null |sort));. $_HELPERS
+test -n "$_HELPERS" || _error "===> ❌ _HELPERS env var is missing in $0"
 set +x
 
 #if test ! $(which brew); then
@@ -29,11 +29,11 @@ _BREW_PACKAGES=(
     git #gh
     far2l
     avro-c c-ares kcat
-    kubectl kubectx kube-ps1 k9s
+    kubectl kubectx kube-ps1 k9s hidetatz/tap/kubecolor
     # kind
     ## development tools
     delve
-    httping
+    httping httpie
     iam-policy-json-to-terraform
     reattach-to-user-namespace
     sops
@@ -43,10 +43,10 @@ _BREW_PACKAGES=(
     curl wget
     pinentry watch
     osx-cpu-temp
-    task tldr
+    task tldr oniguruma
+    gnu-sed
     ## ip tools , networking
-    iproute2mac
-    # nmap
+    iproute2mac nmap
     # mysql-client pgloader postgresql@14
     # glow hugo
 )
