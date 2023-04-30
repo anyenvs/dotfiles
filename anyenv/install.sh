@@ -25,8 +25,6 @@ _ANYENV_ENVS=(
 for env in ${_ANYENV_ENVS[@]^^} ;do export ${env^^}_ROOT=$HOME/.${env,,} ;done
 for env in ${_ANYENV_ENVS[@]^^} ;do val=$(env|grep "${env^^}_ROOT="|head -1) ; test -n "${val}" && export ANYENV_ENVS=${ANYENV_ENVS}:${val##*=}/bin:${val##*=}/shims ;done
 
-#export ANYENV_ROOT=$HOME/.anyenv KREW_ROOT=$HOME/.krew GOENV_ROOT=$HOME/.goenv PYENV_ROOT=$HOME/.pyenv JENV_ROOT=$HOME/.jenv NODENV_ROOT=$HOME/.nodenv TFENV_ROOT=$HOME/.tfenv BAZELENV_ROOT=$HOME/.bazelenv HELMENV_ROOT=$HOME/.helmenv HELMFILENV_ROOT=$HOME/.helmfilenv ISTIOENV_ROOT=$HOME/.istioenv
-#export ANYENV_ENVS=$KREW_ROOT/bin:$GOENV_ROOT/bin:$GOENV_ROOT/shims:$PYENV_ROOT/bin:$PYENV_ROOT/shims:$JENV_ROOT/bin:$JENV_ROOT/shims:$NODENV_ROOT/bin:$NODENV_ROOT/shims:$TFENV_ROOT/bin:$TFENV_ROOT/shims:$BAZELENV_ROOT/bin:$BAZELENV_ROOT/shims:$HELMENV_ROOT/bin:$HELMENV_ROOT/shims:$HELMFILENV_ROOT/bin:$HELMFILENV_ROOT/shims:$ISTIOENV_ROOT/bin:$ISTIOENV_ROOT/shims
 export GO111MODULE=on CGO_ENABLED="0" GOBIN=${HOME}/go/bin GOPATH=${HOME}/.go
 export PATH=$(echo -n "$HOME/bin:$HOME/.local/bin:$ANYENV_ROOT/bin:$ANYENV_ENVS:$PATH" | awk -v RS=: -v ORS=: '!x[$0]++' | sed "s/\(.*\).\{1\}/\1/")
 echo -e 'verbose=off \nprogress=bar:force:noscroll \nshow_progress=on \ncheck_certificate=off\n' > ~/.wgetrc; cat ~/.wgetrc ;

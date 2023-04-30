@@ -6,12 +6,13 @@
 #[│](bold green)$directory$rust$package
 #[└─>](bold green) """
 format = """
-$username$hostname$directory$git_branch$git_status
-${custom.os}$custom$character $kubernetes
-[\\$](cyan) [❯](bold green) """
+${custom.username}$hostname$directory$git_branch$git_status
+${custom.os}$custom$character $kubernetes$helm
+$aws$azure$cmd_duration
+[$shell\\$](cyan) [❯](bold green) """
 ## ➜
 scan_timeout = 30
-command_timeout = 700
+command_timeout = 1000
 add_newline = true
 
 [custom]
@@ -22,6 +23,14 @@ style = "bold green"
 command = "case $(echo -n `uname -s | tr '[:upper:]' '[:lower:]:' | sed 's/mingw64_nt.*/windows/'`) in darwin) echo  ;; linux) echo 🐧 ;; freebsd) echo ☿ ;; *) echo '' ;; esac;"
 #detect_files = ["foo"] # can specify filters but wildcards are not supported
 #when = """ test "$HOME" = "$PWD" """
+when = true
+disabled = false
+
+[custom.username]
+format = "[$output]($style)"
+#style_root = 'red'
+style = 'purple'
+command = "echo $USER | cut -c1-6"
 when = true
 disabled = false
 
@@ -40,14 +49,25 @@ show_always = true
 disabled = false
 
 [aws]
-format = 'on [$symbol($profile )(\($region\) )(\[$duration\])]($style)'
-symbol = '☁️  '
-style = 'yellow'
+format = '[$symbol\[($profile)($expiration_symbol)\](\($region\) )]($style)'
+symbol = '☁️  🅰 🆆 🆂 '
+#style = 'yellow'
+style = '#FFA500'
 disabled = false
 expiration_symbol = 'X'
-
 [aws.region_aliases]
+ap-southeast-2 = 'au'
+us-east-1 = 'use1'
+us-east-2 = 'use2'
+[aws.profile_aliases]
+CompanyGroupFrobozzOnCallAccess = 'Frobozz'
+AWSReservedSSO_AP_B_G_PSRE_AutPla_2c26760135801688 = 'dev-ap'
 
+[azure]
+disabled = false
+format = '[$symbol($subscription)]($style)'
+symbol = 'ﴃ 🅰 🆉 '
+style = 'blue bold'
 [battery]
 format = "[$symbol$percentage]($style) "
 
@@ -62,7 +82,7 @@ disabled = false
 
 [cmd_duration]
 min_time = 2000
-format = 'took [$duration]($style) '
+format = '[ ](fg:black bg:black)took:[$duration]($style) [ ](#080808 bg:black)'
 style = 'yellow'
 show_milliseconds = false
 disabled = false
@@ -297,14 +317,16 @@ detect_files = [
 detect_folders = ['Godeps']
 
 [helm]
-format = 'via [$symbol($version )]($style)'
+format = '[[ ](fg:#080808 bg:#282828)[$symbol](fg:blue bg:#282828)|[($version)]($style)[](fg:#282828)]($style)'
+#format = '[[  ](fg:#080808 bg:#282828)\([$symbol](fg:blue bg:#282828)|[$context](fg:red bg:#282828):[$namespace](fg:cyan bg:#282828)\) [ ](fg:#282828)]($style)'
 version_format = 'v${raw}'
 symbol = '⎈ '
-style = 'white'
+style = 'fg:cyan bg:#282828'
+
 disabled = false
 detect_extensions = []
 detect_files = [
-    'helmfile.yaml',
+    'helmfile.yaml','default.yaml',
     'Chart.yaml',
 ]
 detect_folders = []
@@ -639,16 +661,23 @@ detect_files = [
 detect_folders = ['.metals']
 
 [shell]
-format = '$indicator '
-bash_indicator = 'bsh'
-fish_indicator = 'fsh'
-zsh_indicator = 'zsh'
-powershell_indicator = 'psh'
-ion_indicator = 'ion'
-elvish_indicator = 'esh'
-tcsh_indicator = 'tsh'
-unknown_indicator = ''
-disabled = true
+format = '$indicator'
+style = 'cyan bold'
+#fish_indicator = 'fsh'
+#zsh_indicator = 'zsh'
+#powershell_indicator = 'psh'
+#bash_indicator = 'bsh'
+bash_indicator = ''
+zsh_indicator = '🆉 🆂 🅷 '
+#fish_indicator = '🐠 '
+fish_indicator = '🅵 🅸 🆂 🅷 '
+powershell_indicator = '_'
+ion_indicator = '🅸 🅾 🅽 '
+elvish_indicator = '🅴 🆂 🅷 '
+tcsh_indicator = '🆃 🆂 🅷 '
+#unknown_indicator = ''
+unknown_indicator = 'mystery shell'
+disabled = false
 
 [shlvl]
 threshold = 2
