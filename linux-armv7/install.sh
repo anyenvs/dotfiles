@@ -22,7 +22,7 @@ export BASHRC=${DATA_1_APPS}/linux-armv7/_bashrc
 
 _dotfiles-repo() {
     test -d ${DATA_1}/opt/repos/_dotfiles || { echo "Please clone DOTFILES Repo\n git clone --branch=main --depth=1 https://x-token-auth@github.com/anyenvs/dotfiles.git ${DATA_1}/opt/repos/_dotfiles" ; return 1; }
-    test -f ${DATA_1}/_dotfiles || ( cd $DATA_1 ; ln -svnf ${DATA_1}/opt/repos/_dotfiles _dotfiles )
+    test -f ${DATA_1}/_dotfiles || ( cd $DATA_1 ; ln -svnf opt/repos/_dotfiles _dotfiles )
     test -f ~/.bashrc || ( cd ~ ; ln -svnf ${BASHRC} .bashrc || exit 1 )
     set +x
 }
@@ -39,7 +39,7 @@ _armv7-tools() {
     #echo "git clone --branch=main --depth=1 https://github.com/Allespro/armv7-android-tools.git ${DATA_1_ARMV7_TOOLS}"
     for f in ${DATA_1_ARMV7_TOOLS}/bin/* ;do eval which ${f##*/} || ( cd /usr/local/bin ; test -f ${f} && ln -svnf ${f} ${f##*/} ; chmod +x ${f##*/} ) ;done
     ## ArmV7 Libraries
-    for i in ${DATA_1_ARMV7_TOOLS}/lib/lib* ;do ( cd ${DATA_1_ARMV7_TOOLS} ; test -f ${i} && cp -fv ${i} /lib/ ) ;done
+    for i in ${DATA_1_ARMV7_TOOLS}/lib/lib* ;do ( cd ${DATA_1_ARMV7_TOOLS} ; test -f ${i}  && echo cp -fv ${i} /lib/ ) ;done #-a ! -s /lib/${i##*/}
     for i in ${DATA_1_ARMV7_TOOLS}/lib/git-core.tar.gz ;do ( cd ${DATA_1_ARMV7_TOOLS} ; test -f ${i} -a ! -d /lib/git-core && tar zxvf ${i} -C /lib/ ) ;done
     ## Busybox
     eval which {/usr/local/bin/busybox,} || ( f=/usr/local/bin/busybox ; test -f $f || wget -qO $f https://raw.githubusercontent.com/anyenvs/armv7-android-tools/main/bin/${f##*/} ; chmod +x $f ; $f --install ${f%/*} )

@@ -66,7 +66,7 @@ test -d /otp || ( path=$_ ; cd / ; ln -svnf ${DATA_1_APPS}/linux-armv7/${path##*
 
 _dotfiles-repo() {
     test -d ${DATA_1}/opt/repos/_dotfiles || { echo "Please clone DOTFILES Repo\n git clone --branch=main --depth=1 https://x-token-auth@github.com/anyenvs/dotfiles.git ${DATA_1}/opt/repos/_dotfiles" ; exit 1; }
-    test -f ${DATA_1}/_dotfiles || ( cd $DATA_1 ; ln -svnf ${DATA_1}/opt/repos/_dotfiles _dotfiles )
+    test -f ${DATA_1}/_dotfiles || ( cd $DATA_1 ; ln -svnf opt/repos/_dotfiles _dotfiles )
     test -f ~/.bashrc || ( cd ~ ; ln -svnf ${BASHRC} .bashrc || exit 1 )
     set +x
 }
