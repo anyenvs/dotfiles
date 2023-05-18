@@ -8,11 +8,18 @@ prompt: enabled
 pager:
 # Aliases allow you to create nicknames for gh commands
 aliases:
+    igrep: '!gh issue list --label="$1" | grep "$2"'
+    epicsBy: issue list --author="$1" --label="epic"
+    homework: issue list --assignee @me
+    bugs: issue list --label=bugs
     co: pr checkout
     prlist: pr list --assignee "$1"
     prc: pr create
     prcf: pr create --fill
-    rv: repo view -w
+    repo-open: repo view -w
+    pr-view: pr view -w
+    pr-create: "!f(){ local pr_name=${1:-_PR-NAME_}; local pr_body=${2:-_PR-BODY_}; echo gh pr create --title \\\"$pr_name\\\" --body \\\"$pr_body\\\" --head $(git rev-parse --abbrev-ref HEAD); };f"
+    pr-merge: '!f(){ echo "gh pr checkout 123 ; git switch main ; git merge -S --no-ff - " ; };f'
 # The path to a unix socket through which send HTTP connections. If blank, HTTP traffic will be handled by net/http.DefaultTransport.
 http_unix_socket:
 # What web browser gh should use when opening URLs. If blank, will refer to environment.
