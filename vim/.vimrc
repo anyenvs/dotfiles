@@ -51,6 +51,8 @@ Plugin 'https://github.com/tpope/vim-fugitive'
 Plugin 'fatih/vim-go'
 " ## https://github.com/sheerun/vim-polyglot#installation
 Plugin 'sheerun/vim-polyglot'
+" ## https://github.com/soywod/iris.vim#installation
+Plugin 'soywod/iris.vim'
 " cht.sh plugin
 Plugin 'scrooloose/syntastic'
 Plugin 'dbeniamine/cheat.sh-vim'
@@ -61,6 +63,23 @@ Plugin 'junegunn/fzf.vim'
 " https://github.com/jistr/vim-nerdtree-tabs#commands-and-mappings
 " :NERDTreeFocusToggle  ## https://github.com/jistr/vim-nerdtree-tabs/blob/master/nerdtree_plugin/vim-nerdtree-tabs.vim#L218
 Bundle 'jistr/vim-nerdtree-tabs'
+" https://github.com/voldikss/vim-floaterm#get-started
+" :FloatermNew (open terminal), :FloatermToggle (hide/show terminal)
+" :FloatermNew /usr/local/bin/bash --rcfile ~/.profile
+" :FloatermNew --height=0.6 --width=0.4 --wintype=float --name=floaterm1 --position=topleft --autoclose=2 ranger --cmd="cd ~"
+Plugin 'voldikss/vim-floaterm'
+" vim-floaterm settings ## https://github.com/voldikss/vim-floaterm#options
+let g:floaterm_shell     = "/usr/local/bin/bash --rcfile ~/.profile"
+let g:floaterm_autoclose = 2
+let g:floaterm_width     = 0.6
+let g:floaterm_height    = 0.8
+" If wintype is float: 'top', 'bottom', 'left', 'right', 'topleft', 'topright', 'bottomleft', 'bottomright', 'center', 'auto'(at the cursor place)
+let g:floaterm_position  = "topright"
+let g:floaterm_keymap_toggle = '<F7>'
+"let g:floaterm_keymap_new    = '<F7>'
+"let g:floaterm_keymap_prev   = '<F8>'
+"let g:floaterm_keymap_next   = '<F9>'
+"let g:floaterm_keymap_toggle = '<F12>'
 
 " make YCM compatible with UltiSnips (using supertab)
 " YouCompleteMe and UltiSnips compatibility, with the helper of supertab
@@ -161,11 +180,9 @@ autocmd BufEnter *.py colorscheme Tomorrow
 " autocmd BufEnter *.bash* colorscheme gruvbox
 autocmd BufEnter *.bash* colorscheme codedark "#onedark "#desert
 autocmd BufEnter *.tf* colorscheme onedark
-
-" Set the filetype based on the file's extension, overriding any
-" 'filetype' that has already been set
+" Set the filetype based on the file's extension, overriding any 'filetype' that has already been set
 autocmd BufRead,BufNewFile .bash* set filetype=sh
-
+autocmd BufRead,BufNewFile .*.fzf set filetype=sh
 
 " tab spaces https://stackoverflow.com/questions/1878974/redefine-tab-as-4-spaces/1878983#1878983
 set tabstop=2 softtabstop=0 expandtab shiftwidth=2 smarttab

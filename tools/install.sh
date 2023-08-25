@@ -21,7 +21,8 @@ _htop-configs(){
 }
 
 _htop-install() {
-    _log "===> 🚀 htop install \n ===> 🚀 brew install htop"
+    _log "===> 🚀 htop install \n ===> 🚀 brew install htop" ;
+    brew install htop ;
 }
 
 # ######

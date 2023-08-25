@@ -20,10 +20,10 @@ _BREW_PACKAGES=(
     ## build utils
     bash bash-completion@2 dos2unix bat
     fd colordiff gls gawk htop jq jid python-yq tree
-    coreutils findutils diffutils binutils iputils
+    coreutils findutils diffutils binutils iputils iproute2mac
     gcc@8 gcc make cmake libffi
     gnupg grep ca-certificates
-    xz bzip2 lzlib zlib zip 7zip p7zip
+    xz bzip2 lzlib zlib zip 7zip p7zip libarchive
     autoconf openssl@1.1 pkg-config readline
     # fzf
     git #gh
@@ -32,6 +32,7 @@ _BREW_PACKAGES=(
     kubectl kubectx kube-ps1 k9s hidetatz/tap/kubecolor
     # kind
     ## development tools
+    asdf
     delve
     httping httpie
     iam-policy-json-to-terraform
@@ -44,7 +45,7 @@ _BREW_PACKAGES=(
     pinentry watch
     osx-cpu-temp
     task tldr oniguruma
-    gnu-sed
+    gnu-sed ripgrep
     ## ip tools , networking
     iproute2mac nmap
     # mysql-client pgloader postgresql@14
@@ -94,8 +95,9 @@ _brew-install() {
             git -C $BREW_HOME/.linuxbrew/Homebrew ignore Library/Homebrew/brew.sh ;
             brew update-reset ;
             git -C $BREW_HOME/.linuxbrew/Homebrew ignore Library/Homebrew/brew.sh; }
-    echo 'eval which {brew,} && eval "$('$BREW_HOME'/.linuxbrew/bin/brew shellenv)"' > ~/.brewrc
-    grew -q brewrc ~/.bashrc || echo '. ~/.brewrc' >> ~/.bashrc
+    grep -q 'which brew' ~/.brewrc || echo 'eval which {brew,} &>/dev/null && eval "$(`which brew` shellenv)"' > ~/.brewrc
+    grep -q homebrew ~/.brewrc || echo 'eval which {brew,} &>/dev/null || eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.brewrc
+    grep -q brewrc ~/.bashrc || echo '. ~/.brewrc' >> ~/.bashrc
     sed -i 's# == 0# == 1#g' $BREW_HOME/.linuxbrew/Homebrew/Library/Homebrew/brew.sh
     git -C $BREW_HOME/.linuxbrew/Homebrew ignore Library/Homebrew/brew.sh;
     eval "$($BREW_HOME/.linuxbrew/bin/brew shellenv)"
@@ -128,7 +130,7 @@ _brew-install-packages() {
 ## _MAIN__
 __main__() {
     case $(_myOS) in linux) _add-linuxbrew-user || return 1 ;; darwin) _xcode-cli-install ;; *) _error "OS $(_myOS) is currently not supported" ;; esac ;
-    _brew-install || return 1 ;
+    case $(_myOS) in linux) _brew-install ;; *) _log "" ;; esac || return 1 ;
     _brew-install-packages $_BREW_PACKAGES ;
 }
 # ######

@@ -21,12 +21,14 @@ for h in ${_HELPERS[@]} ;do . "$h" ;done
 # Install dependencies
 ###
 _DEFAULT_PACKAGES=(
+    brew
     git
+    fzf
     anyenv
     go
     pip
     vim
-    brew
+    vscode
     starship
     tools
 )
@@ -34,16 +36,10 @@ case $(_myOS) in linux) _PACKAGES=( ${1:-${_DEFAULT_PACKAGES[@]/brew}} ) ;; *) _
 
 echo _HELPERS=${_HELPERS[@]}
 for pkg in "${_PACKAGES[@]}"; do printf " ===> 📣 Starting %s\n" "${pkg}" && DOTFILES_PATH="${DOTFILES_PATH:-.}" _HELPERS=$_HELPERS bash "$DOTFILES_PATH"/dotfiles install $pkg ;done
-#./bin/dotfiles install omz
-#./bin/dotfiles install zsh
-#./bin/dotfiles install brew
-#./bin/dotfiles install vscode
-#./bin/dotfiles install git
-#./bin/dotfiles install github
-#./bin/dotfiles install node
-#./bin/dotfiles install mongodb
-#./bin/dotfiles install starship
-#./bin/dotfiles install tmux
-#./bin/dotfiles install vim
+#./dotfiles install brew
+#./dotfiles install git
+#./dotfiles install fzf
+#./dotfiles install vim
+#./dotfiles install vscode
 
 set +x

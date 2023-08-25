@@ -15,12 +15,36 @@ _vimrc-config() {
     test -f ${HOME}/.vimrc && {
       _log "===> File exist: $(ls -l ${HOME}/.vimrc)\n ===> Remove file before symlinking" ;
       return ;
-    } || ln -svnf "${DOTFILES_PATH}"/vimrc/.vimrc ${HOME}/.vimrc
+    } || ln -svnf "${DOTFILES_PATH}"/vim/.vimrc ${HOME}/.vimrc
 }
 
-__main__() {
-    _vimrc-config || true
+_vim-plugins() {
+    # ############
+    # Vim Plugins
+    # ############
+    test -d ~/.vim/bundle/Vundle.vim || {
+      _log "===> Installing Vundle + Plugins" ;
+      git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim ;
+      vim +PluginInstall +qall ;
+
+    }
 }
+
+_vim-poweline-fonts() {
+    test -d /opt/fonts || {
+      _log "===> Installing PowerLine Fonts" ;
+      git clone --depth=1 https://github.com/powerline/fonts.git /opt/fonts || return 1
+      cd /opt/fonts && ./install.sh ;
+    }
+}
+
+
+__main__() {
+    _vim-poweline-fonts    
+    _vimrc-config || true
+    _vim-plugins
+}
+
 # ######
 # Main
 # ######

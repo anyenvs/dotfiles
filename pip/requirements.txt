@@ -9,7 +9,8 @@ awscli
 awscli-plugin-endpoint
 awslogs
 s3transfer
-s3cmd s4cmd
+s3cmd
+s4cmd
 
 ## PIP mkdocs
 ## pip3 install

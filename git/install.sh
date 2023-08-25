@@ -13,8 +13,8 @@ eval which {git,gpg,wget} || _install wget gnupg2 git ;
 _git-configs() {
     test -f "${HOME}/.gitconfig" && _log "===> File exists: $(ls -l ${HOME}/.gitconfig)\n ===> Remove file before symlinking"
     test -f "${HOME}/.gitconfig" -a -L "${HOME}/.gitconfig" -a -f "$(command -v sops)" && {
-        sops -d "${DOTFILES_PATH}"/git/cfg/.gitconfig 2&>1 /dev/null || _error "===> File not encrypted: $(ls -l "${DOTFILES_PATH}"/git/cfg/.gitconfig)\n===> Otherwise check if correct keys used\n";
-        sops -d "${DOTFILES_PATH}"/git/cfg/.gitconfig 2&>1 /dev/null && sops -d "${DOTFILES_PATH}"/git/cfg/.gitconfig > "${DOTFILES_PATH}"/git/cfg/.gitconfig_raw;
+        sops -d "${DOTFILES_PATH}"/git/cfg/.gitconfig &> /dev/null || _error "===> File not encrypted: $(ls -l "${DOTFILES_PATH}"/git/cfg/.gitconfig)\n===> Otherwise check if correct keys used\n";
+        sops -d "${DOTFILES_PATH}"/git/cfg/.gitconfig &> /dev/null && sops -d "${DOTFILES_PATH}"/git/cfg/.gitconfig > "${DOTFILES_PATH}"/git/cfg/.gitconfig_raw;
         test -L "${HOME}/.gitconfig" || ln -svnf "${DOTFILES_PATH}"/git/cfg/.gitconfig_raw ${HOME}/.gitconfig;
     }
     test -f "${HOME}/.gitignore" && {
