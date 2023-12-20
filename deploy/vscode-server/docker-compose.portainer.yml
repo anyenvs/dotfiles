@@ -9,15 +9,20 @@ x-dockerfile: &dockerfile
   #${MNT:-.}/Dockerfile.armhf
   ${MNT:-.}/Dockerfile
 x-image: &image
-  ${DIST:-lscr.io/linuxserver/code-server:latest}
+  ${DIST:-gitpod/openvscode-server:latest}
+  #${DIST:-lscr.io/linuxserver/code-server:latest}
   #${DIST:-lscr.io/linuxserver/code-server:arm32v7-4.9.1}
   #code-server:${DIST:-arm32v7-4.9.1}
 ## DEBUG BASE Image
 #x-imageDebug: &imageDebug
 ## Arguments
 x-monorepoArgs: &monorepoArgs
+  UID: 501
+  GID: 1000
+  GUID: 1000
   MNT: ${MNT}
-  DIST: linuxserver/code-server:${DIST:-latest}
+  DIST: *image
+  #DIST: linuxserver/code-server:${DIST:-latest}
   ## https://github.com/coder/code-server/releases
   #CODE_RELEASE: 4.9.1
   CODE_PORT: 8443
@@ -41,7 +46,7 @@ x-deploy: &deploy
   resources:
     limits:
       cpus: '1.2'
-      memory: 960M
+      memory: 1024M
     reservations:
       cpus: '0.2'
       memory: 128M
@@ -59,8 +64,10 @@ services:
     restart:        unless-stopped
     #restart:       always
     #entrypoint:    echo Started && sleep infinity
+    user: "${UID}:${GID}"
     ports:
       - 8443:8443
+      - 3000:3000
     deploy:
       <<: *deploy
     # To avoid issue with named volume and mounting time
@@ -71,7 +78,11 @@ services:
       <<: *monorepoArgs
       TZ: America/New_York
       PUID: ${PUID:-$UID}
-      PGID: ${PGID:-$GUID}
+      PGID: ${PGID:-$GID}
+      PGUID: ${PGID:-$GUID}
+      MNT: ${MNT:-./}
+      #OPENVSCODE_SERVER_ROOT: /config
+      HOME: /config/workspace
       PASSWORD: changeit #optional changeit
       HASHED_PASSWORD: "" #optional changeit
       SUDO_PASSWORD: changeit #optional changeit

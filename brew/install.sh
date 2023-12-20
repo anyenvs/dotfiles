@@ -29,8 +29,9 @@ _BREW_PACKAGES=(
     git #gh
     far2l
     avro-c c-ares kcat
-    kubectl kubectx kube-ps1 k9s hidetatz/tap/kubecolor
-    # kind
+    ## k8s, ocp
+    kubectx kube-ps1 k9s hidetatz/tap/kubecolor
+    # kind kubectl
     ## development tools
     asdf
     delve
@@ -50,6 +51,13 @@ _BREW_PACKAGES=(
     iproute2mac nmap
     # mysql-client pgloader postgresql@14
     # glow hugo
+)
+
+_BREW_CASK_PACKAGES=(
+    ibm-cloud-cli
+    font-fira-code
+    ## https://github.com/elfmz/far2l
+    far2l
 )
 
 _xcode-cli-install() {
@@ -104,22 +112,23 @@ _brew-install() {
 }
 
 _brew-install-packages() {
-    local _BREW_PACKAGES=${1}
+    local _BREW_PACKAGES=${@}
     _log "===> 🚀 Installing BREW Packages on $(_myOS)"
+    echo ${_BREW_PACKAGES[@]}
     ###
     # Install brew packages
     ###
     # Arm
-    for pkg in "${_BREW_PACKAGES[@]}"; do printf " ===> 🚀 Installing %s\n" "${pkg}" && brew install ${pkg,,} || true; done
+    for pkg in ${_BREW_PACKAGES[@]}; do printf " ===> 🚀 Installing %s\n" "${pkg}" && brew install ${pkg,,} || true; done
 
     _log "===> 🌈 Architectures for the brew installed applications:  $(_myOS), $(_myARCH)"
     #ALL_PACKAGES=("${IBREW_PACKAGES[@]}" "${ABREW_PACKAGES[@]}")
     #for pkg in "${ALL_PACKAGES[@]}"; do printf "%s - " "${pkg}" && (lipo -archs "$(command -v "${pkg}")" || true); done
 
     # Casks
-    brew tap homebrew/cask-fonts
-    brew install --cask font-fira-code
     brew install vim -vd protobuf
+    brew tap homebrew/cask-fonts
+    for pkg in ${_BREW_CASK_PACKAGES[@]}; do printf " ===> 🚀 Installing %s\n" "${pkg}" && brew install --cask ${pkg,,} || true; done
 
     # Some tidying up
     brew autoremove -v
@@ -130,8 +139,8 @@ _brew-install-packages() {
 ## _MAIN__
 __main__() {
     case $(_myOS) in linux) _add-linuxbrew-user || return 1 ;; darwin) _xcode-cli-install ;; *) _error "OS $(_myOS) is currently not supported" ;; esac ;
-    case $(_myOS) in linux) _brew-install ;; *) _log "" ;; esac || return 1 ;
-    _brew-install-packages $_BREW_PACKAGES ;
+    case $(_myOS) in linux) _brew-install ;; *) _log `uname -m` not supported ;; esac ;
+    _brew-install-packages "${_BREW_PACKAGES[@]}" ;
 }
 # ######
 # Main
