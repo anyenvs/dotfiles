@@ -1,0 +1,37 @@
+## Stage 1 - building app
+FROM golang:1.15-alpine AS BUILD
+
+ARG APP_NAME=${APP_NAME:-confd}
+ARG ENTRYPOINT='deploy/entrypoint.sh'
+ARG SOPS_VERSION=${SOPS_VERSION:-3.8.1}
+WORKDIR /src/
+
+# download modules in separated layer, to speed up rebuild by utilising Docker layer caching system
+#COPY go.mod go.sum /src/
+# NOTE: build error may occur due to temporary unavailability of some packages sources
+# Wait and build again is usually a good solution
+#RUN set -xe &&\
+#    go mod download
+
+COPY . /src/
+
+## docker run -it --rm alpine:edge wget -qO- https://api.github.com/repos/mozilla/sops/releases/latest | jq -r '.assets[] | select(.name | endswith("linux")) | .browser_download_url'
+## docker run -it --rm golang:1.17 "apk add --update jq && wget get -qO- https://api.github.com/repos/mozilla/sops/releases/latest | jq -r '.assets[] | select(.name | endswith(\"linux\")) | .browser_download_url'"
+RUN set -xe &&\
+    . /etc/os-release && \
+    _OS=$(uname -s | tr '[:upper:]' '[:lower:]') && _ARCH=$(uname -m | tr '[:upper:]' '[:lower:]' | sed 's/x86_64/amd64/g; s/armv7.*/armv7/g; s/arm64/aarch64/g ') &&\
+    apk --update --no-cache add gnupg jq && apk --update add wget bind-tools &&\
+    ping -c 6 api.github.com ; dig +answer +noall api.github.com &&\
+    SOPS_URL=$(wget -qO- https://api.github.com/repos/mozilla/sops/releases/latest | jq -r '.assets[] | select(.name | endswith("'${_OS}.${_ARCH}'")) | .browser_download_url' 2>/dev/null ) &&\
+    test -n "${SOPS_URL}" && wget -qO /usr/local/bin/sops ${SOPS_URL} || exit 1 &&\
+    test -n "${SOPS_URL}" || { echo sops/releases/latest for ${_OS}.${_ARCH} not found ; } &&\
+    chmod +x /usr/local/bin/sops /src/${ENTRYPOINT} &&\
+    sops --version || wget -qO /usr/local/bin/sops https://github.com/mozilla/sops/releases/download/v${SOPS_VERSION##v}/sops-v${SOPS_VERSION##v}.linux || exit 1 &&\
+    chmod +x /usr/local/bin/sops /src/${ENTRYPOINT} &&\
+    #wget -qO- https://dl.dropboxusercontent.com/s/noe19dbp3mxyzgf/appconfig.asc | gpg --import - &&\
+    ## /src/config.enc - not required
+    ( test -f /src/config.enc && sops -d --input-type yaml /src/config.enc > /src/config.toml || true ) ||\
+    exit 1
+
+RUN set -xe &&\
+    go build -o /src/bin/${APP_NAME} ./cmd/controller/main.go

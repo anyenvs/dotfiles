@@ -1,0 +1,63 @@
+version: '3.8'
+## Main Image Name and Dockerfile
+x-dockerfile: &dockerfile
+  Dockerfile.confd-alpine
+  #Dockerfile.confd
+  #deploy/docker/Dockerfile.ubi
+  #Dockerfile-awscli.ubi
+  #deploy/docker/Dockerfile
+x-image: &image
+  icr.io/automation-saas-platform/mcsp-sre/confd:${TAG:-latest}
+x-appArgs: &appArgs
+  #DIST: debian:bullseye-slim
+  DIST: alpine:edge
+  PORT_EXPOSE: 8000
+  APP_NAME: confd
+  ENTRYPOINT: deploy/entrypoint.sh
+  SOPS_VERSION: 3.8.1
+x-appVolumes: &appVolumes
+  - .:./
+x-dns: &dns
+  - 192.168.1.1
+  - 8.8.8.8
+x-security-opts: &security-opts
+  privileged: true
+  #cap_add:
+  #  - SYS_ADMIN
+  #security_opt:
+  #  - seccomp:unconfined
+  #  - label:disable
+  tmpfs:
+    - /run
+    - /run/lock
+
+### #######################
+### Services            ###
+### #######################
+services:
+  ##
+  ## Go confd
+  ##
+  confd:
+    network_mode: host
+    hostname:     ${APP_NAME}
+    image:        *image
+    build:
+      context:    ./
+      dockerfile: *dockerfile
+      args:
+        *appArgs
+    restart: always
+    environment:
+      - HOME=/root
+    #entrypoint: sh -c '/app/entrypoint.sh'
+    #volumes: *appVolumes
+    dns: *dns
+    # To avoid issue with named volume and mounting time
+    <<: *security-opts
+
+volumes: {}
+  #redis_data:
+  #rds_data:
+  #mongo_data:
+  #mysql_data:

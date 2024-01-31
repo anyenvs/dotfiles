@@ -1,0 +1,11 @@
+[template]
+src   = "privoxy-config.tmpl"
+dest  = "/etc/service/privoxy/config"
+#owner = "app"
+#group = "app"
+mode  = "0644"
+keys = [
+"/port",
+]
+#check_cmd = "/app/bin/check {{ .src }}"
+#reload_cmd = "service restart example"

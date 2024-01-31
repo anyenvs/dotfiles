@@ -1,0 +1,30 @@
+#https://www.torproject.org/docs/tor-manual.html.en#Log
+Log info stdout
+#"err": something bad just happened, and we can't recover. Tor will exit.
+#"warn": something bad happened, but we're still running. The bad thing might be a bug in the code, some other Tor process doing something unexpected, etc. The operator should examine the message and try to correct the problem.
+#"notice": something the operator will want to know about.
+#"info": something happened (maybe bad, maybe ok), but there's nothing you need to (or can) do about it.
+#"debug": for everything louder than info. It is quite loud indeed.
+LogMessageDomains 1
+#includes message domains with each log message
+
+SocksPolicy accept *
+
+#SocksListenAddress 0.0.0.0
+SocksPort 0.0.0.0:9050
+
+## Torified DNS
+#DNSPort 0.0.0.0:9053
+#DNSListenAddress 0.0.0.0
+DNSPort 127.0.0.1:9053 IsolateClientAddr IsolateSOCKSAuth IsolateClientProtocol IsolateDestPort IsolateDestAddr
+AutomapHostsOnResolve 1
+AutomapHostsSuffixes .exit, .onion
+#ClientDNSRejectInternalAddresses 1
+ClientRejectInternalAddresses 1
+
+#ExitNodes {ca},{gb},{jp},{fr},{de}
+#ExitNodes {ru},{fr}
+ExitNodes {ua}
+
+#https://wiki.archlinux.org/index.php/Tor#Tor_configuration
+#https://www.torproject.org/docs/tor-manual.html.en#_general_options

@@ -1,0 +1,19 @@
+FROM golang:1.15-alpine
+
+ARG CONFD_VERSION=${CONFD_VERSION:-0.16.0}
+
+ENV CONFD_VERSION=${CONFD_VERSION}
+
+ADD https://github.com/kelseyhightower/confd/archive/v${CONFD_VERSION}.tar.gz /tmp/
+
+RUN set -xe ;\
+    . /etc/os-release && \
+    _OS=$(uname -s | tr '[:upper:]' '[:lower:]') && _ARCH=$(uname -m | tr '[:upper:]' '[:lower:]' | sed 's/x86_64/amd64/g; s/armv7.*/armv7/g; s/arm64/aarch64/g ') ;\
+    apk add --no-cache \
+    bzip2 make gcc && \
+    mkdir -p /go/src/github.com/kelseyhightower/confd && cd /go/src/github.com/kelseyhightower/confd && \
+    tar --strip-components=1 -zxf /tmp/v${CONFD_VERSION}.tar.gz && \
+    go install github.com/kelseyhightower/confd && \
+    rm -rf /tmp/v${CONFD_VERSION}.tar.gz
+
+CMD ["echo", "Confd build"]

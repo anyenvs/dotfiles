@@ -1,0 +1,235 @@
+## -----------------------------------------------------------------------------------
+##
+## How to build and run proxy image from compose:
+##  ** inspired by : https://github.com/dockage/confd/tree/master/alpine/3.11 **
+##  ( cd "$ICLOUD_PATH"/opt/proxy ; docker compose build )
+##  ( cd "$ICLOUD_PATH"/opt/proxy ; docker compose up )
+##  ( cd "$ICLOUD_PATH"/opt/proxy ; docker compose ps )
+## --------------------------------------------------------------------------------------
+version: '3.9'
+## Main Image Name and Dockerfile
+x-dockerfile: &dockerfile
+  #${MNT:-proxy}/Dockerfile
+  ${MNT:-proxy}/Dockerfile.armv7
+x-dockerfile-armv7: &dockerfile
+  ${MNT:-proxy}/Dockerfile.armv7
+x-image: &image
+  proxy:alpine-edge
+  #proxy:${DIST:-alpine-edge}
+  #proxy:${DIST:-debian-bullseye}
+## DEBUG BASE Image
+x-imageTools: &imageTools
+  proxy:alpine-tools
+x-dockerfileTools: &dockerfileTools
+  ${MNT:-proxy}/Dockerfile.tools
+#x-imageDebug: &imageDebug
+## CONFD
+x-imageConfd: &imageConfd
+  confd:latest
+x-dockerfileConfd: &dockerfileConfd
+  ${MNT:-confd}/Dockerfile.confd-alpine
+## Arguments
+x-monorepoArgs: &monorepoArgs
+  MNT: ${MNT}
+  #DIST: debian:bullseye-slim
+  #DIST: alpine:edge
+  ## WCLOUD armv7 works only with alpine:3.17
+  DIST: alpine:3.17
+  EXPOSE: 8118 9050
+  PORT_EXPOSE_SOCKS: 9050
+  PORT_EXPOSE_HTTP: 8118
+  PORT_EXPOSE_DNS: 127.0.0.1:9053
+  ## COUNTRY_CODE='{fr},{pt' docker-compose build proxy
+  ## https://sccmrookie.blogspot.com/2016/03/tor-country-codes-list.html
+  TOR_EXITNODES: ${COUNTRY_CODE:-{ua}}
+  #TOR_EXITNODES: "{ru},{fr}"
+  #TOR_EXITNODES: "{ca},{gb},{jp},{fr},{de}"
+  #TOR_EXITNODES: "{mz},{mc}"
+  CONFD_DEBUG: Y29uZmQgLW9uZXRpbWUgLWJhY2tlbmQgZW52IC1sb2ctbGV2ZWwgZGVidWcK
+  CONFD_BACKEND: env
+  CONFD_LOG_LEVEL: info
+x-monorepoVolumes: &monorepoVolumes
+  #- ..:/opt/repos
+  #- .config/docker-config.json:/root/.docker/docker-config.json
+  #- .config/kube-config.yml:/root/.kube/config
+  #### local config mappings
+  #- .config/.bash_history:/root/.bash_history
+  #- ${MNT}${HOME}/work/repos:/opt/repos
+  #- /opt/repos:/opt/repos
+  #- ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/docker-config.json:/root/.docker/docker-config.json
+  #- ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/kube-config.yml:/root/.kube/config
+  #- ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/gitconfig:/root/.gitconfig
+  #- ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/gnupg:/root/.gnupg
+  - ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/.bash_history:/root/.bash_history
+x-security-opts: &security-opts
+  privileged: true
+  cap_add:
+    - SYS_ADMIN
+    - SYS_TIME
+  security_opt:
+    - seccomp:unconfined
+    - label:disable
+  tmpfs:
+    - /run
+    - /run/lock
+x-build: &build
+  #privileged: true
+  #cap_add: [ SYS_ADMIN, SYS_TIME ]
+  context:    ./
+  dockerfile: *dockerfile
+  network: host
+  args:
+    *monorepoArgs
+  #platforms:     [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
+  #platforms:    [ "linux/arm64","linux/arm/v7" ]
+x-deploy: &deploy
+  replicas: 2
+  update_config:
+    parallelism: 2
+  #restart_policy:
+  #  condition: "Always"
+  resources:
+    limits:
+      cpus: '1'
+      memory: 1024M
+    reservations:
+      cpus: '0.2'
+      memory: 128M
+## ###################################################################### ##
+##  SERVICES                                                              ##
+## ###################################################################### ##
+services:
+  ## ###################################################################### ##
+  ## PROXY
+  ## ###################################################################### ##
+  proxy:
+    #platform:       linux/armv7,linux/amd64,linux/arm64,linux/arm/v7
+    #platform:       linux/arm/7l
+    #platform:       linux/arm64
+    network_mode:   host
+    hostname:       proxy
+    #container_name: proxy
+    image:       *image
+    # To avoid issue with named volume and mounting time
+    <<: *security-opts
+    #cap_add: [ SYS_ADMIN, SYS_TIME ]
+    ports:
+      - 9050:9050
+      - 8118:8118
+    build:
+      <<: *build
+    deploy:
+      <<: *deploy
+    dns:
+      - 192.168.1.1
+      - 8.8.8.8
+      - 4.4.4.4
+    restart: always
+    environment:
+      ## https://docs.docker.com/compose/environment-variables/env-file/
+      ## https://docs.docker.com/compose/environment-variables/env-file/
+      HOME_USER: ${HOME}
+      #ENABLE_IPV6: true
+      TZ: America/New_York
+      ## COUNTRY_CODE={ua} docker-compose config proxy
+      ## COUNTRY_CODE={fr},{pt docker-compose config proxy
+      TOR_EXITNODES: ${COUNTRY_CODE-{ua}}
+      #TOR_EXITNODES: "{au}"
+      #TOR_EXITNODES: "{ua}"
+      #TOR_EXITNODES: "{ee}" ## ESTONIA
+      #TOR_EXITNODES: "{lv}" ## LATVIA
+      #TOR_EXITNODES: "{fi}" ## FINLAND
+      #TOR_EXITNODES: "{kz}" ## KZ
+      ## https://metrics.torproject.org/rs.html#search/country:ru
+      #TOR_EXITNODES: "91.92.109.43"
+      #TOR_EXITNODES: "{ru}"
+      #TOR_EXITNODES: "{by}" ## BELARUS
+      #TOR_EXITNODES: "{ro}" ## ROMANIA:{ro}
+      #TOR_EXITNODES: "{bd}"
+      #TOR_EXITNODES: "{in}"
+      #TOR_EXITNODES: "{ru},{fr}"
+      #TOR_EXITNODES: "{jp},{de}"
+      #TOR_EXITNODES: "{ca},{gb}"
+      #TOR_EXITNODES: "{cc}" ## COCOS ISLAND
+    #user:         foo
+    #user:         "${UID}:${GID}"
+    #command:      echo $USER
+    #entrypoint:   sleep infinity
+    #entrypoint:   sleep 9999d
+    entrypoint:   runsvdir /etc/service
+    volumes: *monorepoVolumes
+
+  ## ###################################################################### ##
+  ## PROXY TOOLS
+  ## ###################################################################### ##
+  tools:
+    #platform:       linux/arm/v7
+    #platform:       linux/arm64
+    network_mode:   host
+    hostname:       proxy-tools
+    container_name: proxy-tools
+    image:          *imageTools
+    # To avoid issue with named volume and mounting time
+    <<: *security-opts
+    #cap_add: [ SYS_ADMIN, SYS_TIME ]
+    build:
+      context:    ./
+      dockerfile: *dockerfileTools
+      ## failed to solve: granting entitlement security.insecure is not allowed by build daemon configuration
+      #privileged: true
+      ## failed to solve: granting entitlement network.host is not allowed by build daemon configuration
+      #network: host
+      args:
+        *monorepoArgs
+      #platforms:    [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
+      #platforms:    [ "linux/arm64","linux/arm/v7" ]
+    dns:
+      - 192.168.1.1
+      - 8.8.8.8
+      - 4.4.4.4
+    environment:
+      ## https://docs.docker.com/compose/environment-variables/env-file/
+      ## https://docs.docker.com/compose/environment-variables/env-file/
+      HOME_USER: ${HOME}
+      #ENABLE_IPV6: true
+      TZ: America/New_York
+      ## COUNTRY_CODE={ua} docker-compose config proxy
+      ## COUNTRY_CODE={fr},{pt docker-compose config proxy
+      TOR_EXITNODES: ${COUNTRY_CODE-{ua}}
+
+  ## ###################################################################### ##
+  ## CONFD
+  ## ###################################################################### ##
+  confd:
+    #platform:       linux/arm/v7
+    #platform:       linux/arm64
+    network_mode:   host
+    hostname:       confd
+    container_name: confd
+    image:          *imageConfd
+    # To avoid issue with named volume and mounting time
+    <<: *security-opts
+    #cap_add: [ SYS_ADMIN, SYS_TIME ]
+    build:
+      context:    ./
+      dockerfile: *dockerfileConfd
+      ## failed to solve: granting entitlement security.insecure is not allowed by build daemon configuration
+      #privileged: true
+      #network: host
+      args:
+        *monorepoArgs
+      #platforms:     [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
+      #platforms:    [ "linux/arm64","linux/arm/v7" ]
+    dns:
+      - 192.168.1.1
+      - 8.8.8.8
+      - 4.4.4.4
+    environment:
+      ## https://docs.docker.com/compose/environment-variables/env-file/
+      ## https://docs.docker.com/compose/environment-variables/env-file/
+      HOME_USER: ${HOME}
+      #ENABLE_IPV6: true
+      TZ: America/New_York
+      ## COUNTRY_CODE={ua} docker-compose config proxy
+      ## COUNTRY_CODE={fr},{pt docker-compose config proxy
+      TOR_EXITNODES: ${COUNTRY_CODE-{ua}}

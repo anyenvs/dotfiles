@@ -9,7 +9,8 @@ x-dockerfile: &dockerfile
   #${MNT:-.}/Dockerfile.armhf
   ${MNT:-.}/Dockerfile
 x-image: &image
-  ${DIST:-lscr.io/linuxserver/code-server:latest}
+  ${DIST:-gitpod/openvscode-server:latest}
+  #${DIST:-lscr.io/linuxserver/code-server:latest}
   #${DIST:-lscr.io/linuxserver/code-server:arm32v7-4.9.1}
   #code-server:${DIST:-arm32v7-4.9.1}
 ## DEBUG BASE Image
@@ -17,7 +18,8 @@ x-image: &image
 ## Arguments
 x-monorepoArgs: &monorepoArgs
   MNT: ${MNT}
-  DIST: linuxserver/code-server:${DIST:-latest}
+  DIST: gitpod/openvscode-server:${DIST:-latest}
+  #DIST: linuxserver/code-server:${DIST:-latest}
   ## https://github.com/coder/code-server/releases
   #CODE_RELEASE: 4.9.1
 x-monorepoVolumes: &monorepoVolumes
@@ -46,6 +48,12 @@ x-deploy: &deploy
     reservations:
       cpus: '0.25'
       memory: 128M
+x-build: &build
+  #network:    host
+  context:    docker/
+  dockerfile: *dockerfile
+  args:
+    *monorepoArgs
 ##================================================================================##
 ##  SERVICES  ##
 services:
@@ -85,9 +93,4 @@ services:
     #image:        *image
     image:          ${DIST:-code-server:arm32v7-4.9.1}
     build:
-      #network:    host
-      context:    docker/
-      dockerfile: *dockerfile
-      args:
-        *monorepoArgs
-
+      <<: *build

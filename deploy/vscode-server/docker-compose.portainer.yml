@@ -19,7 +19,6 @@ x-image: &image
 x-monorepoArgs: &monorepoArgs
   UID: 501
   GID: 1000
-  GUID: 1000
   MNT: ${MNT}
   DIST: *image
   #DIST: linuxserver/code-server:${DIST:-latest}
@@ -79,7 +78,6 @@ services:
       TZ: America/New_York
       PUID: ${PUID:-$UID}
       PGID: ${PGID:-$GID}
-      PGUID: ${PGID:-$GUID}
       MNT: ${MNT:-./}
       #OPENVSCODE_SERVER_ROOT: /config
       HOME: /config/workspace

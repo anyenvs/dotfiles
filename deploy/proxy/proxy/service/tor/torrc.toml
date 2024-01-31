@@ -1,0 +1,13 @@
+[template]
+src   = "torrc.tmpl"
+dest  = "/etc/tor/torrc"
+#dest  = "/etc/service/tor/torrc"
+#owner = "app"
+#group = "app"
+mode  = "0644"
+keys = [
+"/port",
+"/tor",
+]
+#check_cmd = "/app/bin/check {{ .src }}"
+#reload_cmd = "service restart example"
