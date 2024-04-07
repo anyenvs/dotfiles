@@ -1,0 +1,93 @@
+# -----------------------------------------------------------------------------
+# InterSystems IRIS Skin
+# Uses Frosty Colors:
+# #333695
+# #00a19c
+# -----------------------------------------------------------------------------
+
+# Skin...
+k9s:
+  body:
+    fgColor: "#97979b"
+    bgColor: "#282a36"
+    logoColor: "#333695"
+  prompt:
+    fgColor: "#97979b"
+    bgColor: "#282a36"
+    suggestColor: "#00a19c"
+  info:
+    fgColor: white
+    sectionColor: "#00a19c"
+  dialog:
+    fgColor: "#97979b"
+    bgColor: "#282a36"
+    buttonFgColor: "#97979b"
+    buttonBgColor: "#282a36"
+    buttonFocusFgColor: "#97979b"
+    buttonFocusBgColor: "#00a19c"
+    labelFgColor: "#97979b"
+    fieldFgColor: "#00a19c"
+  frame:
+    border:
+      fgColor: "#333695"
+      focusColor: "#333695"
+    menu:
+      fgColor: "#00a19c"
+      keyColor: white
+      numKeyColor: white
+    crumbs:
+      fgColor: "#333695"
+      bgColor: white
+      activeColor: "#00a19c"
+    status:
+      newColor: "#eff0eb"
+      modifyColor: "#00a19c"
+      addColor: "#57c7ff"
+      errorColor: "#ff5c57"
+      highlightColor: "#333695"
+      killColor: mediumpurple
+      completedColor: gray
+    title:
+      fgColor: "#00a19c"
+      bgColor: "#333695"
+      highlightColor: white
+      counterColor: white
+      filterColor: "#57c7ff"
+  views:
+    # Charts skins...
+    charts:
+      bgColor: "#282a36"
+      dialBgColor: "#282a36"
+      chartBgColor: "#282a36"
+      defaultDialColors:
+        - "#333695"
+        - "#00a19c"
+      defaultChartColors:
+        - "#333695"
+        - "#00a19c"
+    table:
+      fgColor: "#333695"
+      bgColor: "#282a36"
+      markColor: "#333695"
+      header:
+        fgColor: white
+        bgColor: "#282a36"
+        sorterColor: orange
+    xray:
+      fgColor: "#57c7ff"
+      bgColor: "#282a36"
+      cursorColor: "#00a19c"
+      graphicColor: darkgoldenrod
+      showIcons: true
+    yaml:
+      keyColor: "#ff5c57"
+      colonColor: white
+      valueColor: "#f3f99d"
+    logs:
+      fgColor: white
+      bgColor: "#282a36"
+      indicator:
+        fgColor: white
+        bgColor: "#282a36"
+        toggleOnColor: "#ff5c57"
+        toggleOffColor: white

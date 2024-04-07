@@ -8,7 +8,7 @@
 format = """
 ${custom.username}$hostname$directory$git_branch$git_status
 ${custom.os}$custom$character $kubernetes$helm
-$aws$azure$cmd_duration
+$nix_shell$aws$azure$cmd_duration
 [$shell\\$](cyan) [❯](bold green) """
 ## ➜
 scan_timeout = 30
@@ -421,6 +421,27 @@ disabled = false
 [kubernetes.user_aliases]
 "dev.local.cluster.k8s" = "dev"
 "root/.*" = "root"
+## https://starship.rs/config/#kubernetes-context-specific-config
+[[kubernetes.contexts]]
+context_pattern = '.*/api-(.*):.*/.*'
+#style = "green"
+symbol = "🎯 "
+context_alias = " $1 "
+[[kubernetes.contexts]]
+context_pattern = '(bastion-.*)'
+symbol = "💭 "
+context_alias = " $1 "
+[[kubernetes.contexts]]
+context_pattern = "gke_.*_(?P<cluster>[\\w-]+)"
+context_alias = "gke-$cluster"
+[[kubernetes.contexts]]
+# "bold red" style + default symbol when Kubernetes current context name equals "production" *and* the current user
+# equals "admin_user"
+context_pattern = "ap-cp-001"
+user_pattern = "admin_user"
+style = "bold red"
+context_alias = "prod"
+user_alias = "admin"
 
 [lua]
 format = 'via [$symbol($version )]($style)'
@@ -453,14 +474,6 @@ detect_extensions = [
 ]
 detect_files = ['nim.cfg']
 detect_folders = []
-
-[nix_shell]
-format = 'via [$symbol$state( \($name\))]($style) '
-symbol = '❄️  '
-style = 'blue'
-impure_msg = 'impure'
-pure_msg = 'pure'
-disabled = false
 
 [nodejs]
 format = 'via [$symbol($version )]($style)'
@@ -659,6 +672,16 @@ detect_files = [
     'build.sbt',
 ]
 detect_folders = ['.metals']
+
+[nix_shell]
+#format = 'via [$symbol$state( \($name\))]($style) '
+format = '[$symbol$state( )]($style) '
+symbol = '❄️ 🅽 🅸 🆇 '
+style = 'blue'
+impure_msg = 'impure'
+pure_msg = 'pure'
+heuristic = true
+disabled = false
 
 [shell]
 format = '$indicator'

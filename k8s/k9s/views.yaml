@@ -1,0 +1,59 @@
+k9s:
+ views:
+   v1/pods:
+     columns:
+       - AGE
+       - NAMESPACE
+       - NAME
+       - IP
+       - NODE
+       - STATUS
+       -ADY
+   v1/services:
+     columns:
+       - AGE
+       - NAMESPACE
+       - NAME
+       - TYPE
+       - CLUSTER-IP
+
+#  views:
+#    # Charts skins...
+#    charts:
+#      bgColor: default
+#      defaultDialColors:
+#        - *purple
+#        - *red
+#      defaultChartColors:
+#        - *purple
+#        - *red
+#    # TableView attributes.
+#    table:
+#      fgColor: *foreground
+#      bgColor: *background
+#      # Header row styles.
+#      header:
+#        fgColor: *foreground
+#        bgColor: *background
+#        sorterColor: *cyan
+#    # Xray view attributes.
+#    xray:
+#      fgColor: *foreground
+#      bgColor: *background
+#      cursorColor: *current_line
+#      graphicColor: *purple
+#      showIcons: false
+#    # YAML info styles.
+#    yaml:
+#      keyColor: *pink
+#      colonColor: *purple
+#      valueColor: *foreground
+#    # Logs styles.
+#    logs:
+#      fgColor: *foreground
+#      bgColor: *background
+#      indicator:
+#        fgColor: *foreground
+#        bgColor: *purple
+#        toggleOnColor: *green
+#        toggleOffColor: *cyan

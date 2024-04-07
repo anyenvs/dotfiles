@@ -5,7 +5,7 @@
 setuptools
 
 ## AWS
-awscli
+#awscli ##disabled in favor of awcli v2
 awscli-plugin-endpoint
 awslogs
 s3transfer
@@ -24,7 +24,7 @@ mkdocs-git-revision-date-plugin
 mike
 
 ##
-yq
+#yq disabled in favor of yq-go
 PyYAML
 toml
 jwcrypto

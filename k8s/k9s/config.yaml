@@ -1,0 +1,66 @@
+k9s:
+  liveViewAutoRefresh: true
+  refreshRate: 5
+  maxConnRetry: 5
+  enableMouse: false
+  headless: false
+  logoless: false
+  crumbsless: false
+  readOnly: false
+  noExitOnCtrlC: false
+  noIcons: false
+  skipLatestRevCheck: false
+  imageScans:
+    enable: true
+  ui:
+    enableMouse: false
+    headless: false
+    logoless: false
+    crumbsless: false
+    noIcons: false
+    # Toggles reactive UI. This option provide for watching on disk artifacts changes and update the UI live  Defaults to false.
+    reactive: false
+    # Uses in_the_navy skin located in your $XDG_CONFIG_HOME/skins/in_the_navy.yaml
+    # => All clusters will use this skin unless otherwise specified in the context configuration file
+    skin: one-dark
+    #skin: in_the_navy_skin
+    #skin: isc_iris_iko
+  logger:
+    tail: 100
+    buffer: 5000
+    sinceSeconds: -1
+    fullScreenLogs: false
+    textWrap: false
+    showTime: false
+  currentContext: ads/api-ap-cp-001-p05k-p1-openshiftapps-com:6443/vyacheslav.malinovskyy@ibm.com
+  currentCluster: api-ap-cp-001-p05k-p1-openshiftapps-com:6443
+  clusters:
+    api-ap-cp-001-p05k-p1-openshiftapps-com:6443:
+      namespace:
+        active: sretools-isv
+        lockFavorites: false
+        favorites:
+        - sretools-isv
+        - default
+      view:
+        active: po
+      featureGates:
+        nodeShell: false
+      shellPod:
+        image: busybox:1.35.0
+        command: []
+        args: []
+        namespace: default
+        limits:
+          cpu: 100m
+          memory: 100Mi
+        labels: {}
+      portForwardAddress: localhost
+  thresholds:
+    cpu:
+      critical: 90
+      warn: 70
+    memory:
+      critical: 90
+      warn: 70
+  screenDumpDir: /tmp/k9s-dumps

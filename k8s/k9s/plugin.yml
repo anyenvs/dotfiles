@@ -1,0 +1,12 @@
+plugin:
+ get-all:
+   shortCut: i
+   confirm: true
+   description: Restart IRIS
+   scopes:
+   - container
+   command: sh
+   background: false
+   args:
+   - -c
+   - "kubectl exec -n $NAMESPACE $POD -- pwd"
