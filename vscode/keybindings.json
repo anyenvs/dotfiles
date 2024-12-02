@@ -117,6 +117,16 @@
   {
     "key": "alt+f",
     "command": "editor.actions.findWithArgs"
+  },
+  {
+    "key": "alt+cmd+n f",
+    "command": "explorer.newFile",
+    "when": "explorerViewletFocus"
+  },
+  {
+    "key": "alt+cmd+n n",
+    "command": "explorer.newFolder",
+    "when": "explorerViewletFocus"
   }
 ]
 // Empty
