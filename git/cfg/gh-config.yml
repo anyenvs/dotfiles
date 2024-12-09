@@ -23,6 +23,7 @@ aliases:
     pr-create: "!f(){ local pr_name=${1:-_PR-NAME_}; local pr_body=${2:-_PR-BODY_}; echo gh pr create --title \\\"$pr_name\\\" --body \\\"$pr_body\\\" --head $(git rev-parse --abbrev-ref HEAD); };f"
     pr-create-from-template: "!f(){ local pr_name=${1:-[mcsp- ] _PR-NAME_}; echo gh pr create --title \\\"$pr_name\\\" --web --head $(git rev-parse --abbrev-ref HEAD) --template pull_request_template.md; };f"
     pr-create-from-template-aws-sretools: "!f(){ local pr_name=${1:-[mcsp- ] _PR-NAME_}; echo gh pr create --title \\\"$pr_name\\\" --web --head $(git rev-parse --abbrev-ref HEAD) --template PULL_REQUEST_TEMPLATE/argo_wf_aws_sretools_template.md; };f"
+    pr-create-from-template-aws-accounts: "!f(){ local pr_name=${1:-[mcsp- ] _PR-NAME_}; echo gh pr create --title \\\"$pr_name\\\" --web --head $(git rev-parse --abbrev-ref HEAD) --template PULL_REQUEST_TEMPLATE/argo_wf_aws_account_template.md; };f"
     pr-onboarding: '!f() { echo "bash scripts/automation/main.sh -u user1 -gn TestService -pr \"TestService - PR body\" -c config.yaml -issue https://github.ibm.com/ibm-saas-platform/workitems/issues/123 -env dev -skip-git-fork"; };f'
     pr-merge: '!f(){ echo "gh pr checkout 123 ; git switch main ; git merge -S --no-ff - " ; };f'
     pr-edit: '!f() { echo "gh pr edit 214 --body-file .github/PULL_REQUEST_TEMPLATE/argo_wf_aws_account_template.md \ngh pr edit 214 --body-file .github/PULL_REQUEST_TEMPLATE/argo_wf_aws_sretools_template.md"; };f'

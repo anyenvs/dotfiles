@@ -1,5 +1,5 @@
 k9s:
-  liveViewAutoRefresh: true
+  liveViewAutoRefresh: false
   refreshRate: 5
   maxConnRetry: 5
   enableMouse: false
@@ -10,21 +10,6 @@ k9s:
   noExitOnCtrlC: false
   noIcons: false
   skipLatestRevCheck: false
-  imageScans:
-    enable: true
-  ui:
-    enableMouse: false
-    headless: false
-    logoless: false
-    crumbsless: false
-    noIcons: false
-    # Toggles reactive UI. This option provide for watching on disk artifacts changes and update the UI live  Defaults to false.
-    reactive: false
-    # Uses in_the_navy skin located in your $XDG_CONFIG_HOME/skins/in_the_navy.yaml
-    # => All clusters will use this skin unless otherwise specified in the context configuration file
-    skin: one-dark
-    #skin: in_the_navy_skin
-    #skin: isc_iris_iko
   logger:
     tail: 100
     buffer: 5000
@@ -32,18 +17,82 @@ k9s:
     fullScreenLogs: false
     textWrap: false
     showTime: false
-  currentContext: ads/api-ap-cp-001-p05k-p1-openshiftapps-com:6443/vyacheslav.malinovskyy@ibm.com
-  currentCluster: api-ap-cp-001-p05k-p1-openshiftapps-com:6443
+  currentContext: default/api-ap-dp-public001-eastus-aroapp-io:6443/kube:admin
+  currentCluster: api-ap-dp-public001-eastus-aroapp-io:6443
   clusters:
     api-ap-cp-001-p05k-p1-openshiftapps-com:6443:
       namespace:
-        active: sretools-isv
+        active: ap
         lockFavorites: false
         favorites:
+        - ap
         - sretools-isv
         - default
       view:
-        active: po
+        active: crc
+      featureGates:
+        nodeShell: false
+      shellPod:
+        image: busybox:1.35.0
+        command: []
+        args: []
+        namespace: default
+        limits:
+          cpu: 100m
+          memory: 100Mi
+        labels: {}
+      portForwardAddress: localhost
+    api-ap-dp-001-koh3-p1-openshiftapps-com:6443:
+      namespace:
+        active: sretools
+        lockFavorites: false
+        favorites:
+        - sretools
+        - default
+      view:
+        active: ctx
+      featureGates:
+        nodeShell: false
+      shellPod:
+        image: busybox:1.35.0
+        command: []
+        args: []
+        namespace: default
+        limits:
+          cpu: 100m
+          memory: 100Mi
+        labels: {}
+      portForwardAddress: localhost
+    api-ap-dp-public001-eastus-aroapp-io:6443:
+      namespace:
+        active: sretools-apic
+        lockFavorites: false
+        favorites:
+        - sretools-apic
+        - default
+      view:
+        active: svc
+      featureGates:
+        nodeShell: false
+      shellPod:
+        image: busybox:1.35.0
+        command: []
+        args: []
+        namespace: default
+        limits:
+          cpu: 100m
+          memory: 100Mi
+        labels: {}
+      portForwardAddress: localhost
+    api-ap-sretool-ap-1-eastus-aroapp-io:6443:
+      namespace:
+        active: sretools-sp
+        lockFavorites: false
+        favorites:
+        - sretools-sp
+        - default
+      view:
+        active: ns
       featureGates:
         nodeShell: false
       shellPod:

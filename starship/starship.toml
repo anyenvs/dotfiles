@@ -65,9 +65,10 @@ AWSReservedSSO_AP_B_G_PSRE_AutPla_2c26760135801688 = 'dev-ap'
 
 [azure]
 disabled = false
-format = '[$symbol($subscription)]($style)'
-symbol = 'ﴃ 🅰 🆉 '
+format = '[$symbol\[($subscription)\]]($style)'
+symbol = 'ﴃ  🅰 🆉 '
 style = 'blue bold'
+
 [battery]
 format = "[$symbol$percentage]($style) "
 
