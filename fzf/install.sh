@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-#set -e
+[ -n "${DEBUG}" ] && { export PS4='+ [${BASH_SOURCE##*/}:${LINENO}] ' ; set -x; }
+
 ls *.env &>/dev/null && . *.env || true
 DOTFILES_PATH="${DOTFILES_PATH:-$(readlink -f ..)}"
 test -z "${_HELPERS}" && _HELPERS=($(find "${DOTFILES_PATH}"/ -name _helpers.bash 2>/dev/null |sort));. $_HELPERS
@@ -24,7 +25,7 @@ _fzf-istall() {
 
 
 __main__() {
-    _fzf-istall || return 1    
+    _fzf-istall || return 1
 }
 
 # ######

@@ -49,7 +49,8 @@ _BREW_PACKAGES=(
     gnu-sed ripgrep
     ## ip tools , networking
     iproute2mac nmap
-    # mysql-client pgloader postgresql@14
+    ## DB tools
+    libpq # mysql-client pgloader postgresql@14
     # glow hugo
 )
 

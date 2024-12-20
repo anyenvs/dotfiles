@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
+[ -n "${DEBUG}" ] && { export PS4='+ [${BASH_SOURCE##*/}:${LINENO}] ' ; set -x; }
 #set -e
-[ -n "$ENV_DEBUG" ] && set -x
 
 ls *.env &>/dev/null && . *.env || true
 export BASH_SOURCE_DIR="$(dirname $(readlink -f ${BASH_SOURCE:-$0}))" BASH_SOURCE_DIR_UP="$(readlink -f $(dirname $(readlink -f ${BASH_SOURCE:-$0}))/../)";

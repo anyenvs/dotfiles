@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-#set -e
+[ -n "${DEBUG}" ] && { export PS4='+ [${BASH_SOURCE##*/}:${LINENO}] ' ; set -x; }
+
 ls *.env &>/dev/null && . *.env || true
 DOTFILES_PATH="${DOTFILES_PATH:-$(readlink -f ..)}"
 test -z "${_HELPERS}" && _HELPERS=($(find "${DOTFILES_PATH}"/ -name _helpers.bash 2>/dev/null |sort));. $_HELPERS;
@@ -12,7 +13,7 @@ eval which {git,gpg,wget} || _install wget gnupg2 git ;
 ## Git
 _git-configs() {
     test -f "${HOME}/.gitconfig" && _log "===> File exists: $(ls -l ${HOME}/.gitconfig)\n ===> Remove file before symlinking"
-    test -f "${HOME}/.gitconfig" -a -L "${HOME}/.gitconfig" -a -f "$(command -v sops)" && {
+    test -f "${HOME}/.gitconfig" -a -L "${HOME}/.gitconfig" -a -f "$(command -v sops)" || {
         sops -d "${DOTFILES_PATH}"/git/cfg/.gitconfig &> /dev/null || _error "===> File not encrypted: $(ls -l "${DOTFILES_PATH}"/git/cfg/.gitconfig)\n===> Otherwise check if correct keys used\n";
         sops -d "${DOTFILES_PATH}"/git/cfg/.gitconfig &> /dev/null && sops -d "${DOTFILES_PATH}"/git/cfg/.gitconfig > "${DOTFILES_PATH}"/git/cfg/.gitconfig_raw;
         test -L "${HOME}/.gitconfig" || ln -svnf "${DOTFILES_PATH}"/git/cfg/.gitconfig_raw ${HOME}/.gitconfig;

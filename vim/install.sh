@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+[ -n "${DEBUG}" ] && { export PS4='+ [${BASH_SOURCE##*/}:${LINENO}] ' ; set -x; }
 #set -e
 ls *.env &>/dev/null && . *.env || true
 DOTFILES_PATH="${DOTFILES_PATH:-$(readlink -f ..)}"
@@ -40,7 +41,7 @@ _vim-poweline-fonts() {
 
 
 __main__() {
-    _vim-poweline-fonts    
+    _vim-poweline-fonts
     _vimrc-config || true
     _vim-plugins
 }
