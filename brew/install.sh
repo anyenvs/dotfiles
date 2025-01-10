@@ -19,7 +19,9 @@ _BREW_PACKAGES=(
     # awscli
     ## build utils
     bash bash-completion@2 dos2unix bat
-    fd colordiff gls gawk htop jq jid python-yq tree
+    fd colordiff gawk htop jq jid tree
+    # python-yq - replaced with yq-go package
+    # gls - is a part of coreutils
     coreutils findutils diffutils binutils iputils iproute2mac
     gcc@8 gcc make cmake libffi
     gnupg grep ca-certificates

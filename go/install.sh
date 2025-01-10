@@ -27,7 +27,11 @@ _go-alt-init() {
 }
 
 GO_MODULES=(
-    go.mozilla.org/sops/v3/cmd/sops@latest
+    # go.mozilla.org/sops/v3/cmd/sops@latest ## deprecated
+    github.com/getsops/sops/v3/cmd/sops@latest
+    github.com/danielmiessler/fabric@latest
+    github.com/mikefarah/yq/v4@latest
+    gitlab.com/gitlab-org/cli/cmd/glab@main
 )
 _go-modules() {
     # ######
