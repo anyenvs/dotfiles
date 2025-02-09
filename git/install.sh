@@ -37,9 +37,25 @@ _github-cli-configs() {
     } || ln -svnf "${DOTFILES_PATH}"/git/cfg/gh-config.yml ${HOME}/.config/gh/config.yml
 }
 
+## Gitlab Cli config
+_gitlab-cli-configs() {
+    test -d "${HOME}/.config/glab-cli" || mkdir -p ${HOME}/.config/glab-cli
+    test -f "${HOME}/.config/glab-cli/config.yml" -a -L "${HOME}/.config/glab-cli/config.yml" -a -f "$(command -v sops)" || {
+        sops -d "${DOTFILES_PATH}"/git/glab/config.yml &> /dev/null || _error "===> File not encrypted: $(ls -l "${DOTFILES_PATH}"/git/glab/config.yml)\n===> Otherwise check if correct keys used\n";
+        sops -d "${DOTFILES_PATH}"/git/glab/config.yml &> /dev/null && sops -d "${DOTFILES_PATH}"/git/glab/config.yml > "${DOTFILES_PATH}"/git/glab/config_raw_yml;
+    }
+    test -f "${HOME}/.config/glab-cli/config.yml" && {
+        _log "===> File exist: $(ls -l ${HOME}/.config/glab-cli/config.yml)" ;
+        return ;
+    } || ln -svnf "${DOTFILES_PATH}"/git/glab/config_raw_yml ${HOME}/.config/glab-cli/config.yml
+    ## Glab Aliases
+    test -f "${HOME}/.config/glab-cli/glab_aliases.yml" && ln -svnf "${DOTFILES_PATH}"/git/glab/glab_aliases.yml ${HOME}/.config/glab-cli/aliases.yml
+}
+
 __main__() {
     _git-configs || exit 1 ;
     _github-cli-configs || true ;
+    _gitlab-cli-configs || true ;
 }
 # ######
 # Main

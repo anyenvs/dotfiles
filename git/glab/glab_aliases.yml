@@ -1,0 +1,12 @@
+ci: pipeline ci
+co: mr checkout
+config-host: '!echo "glab config set host gitlab-ap.private.platform.ibmforusgov.com"'
+mrv: mr view
+igrep: '!glab issue list --assignee="$1" | grep $2'
+mr-merge: '!echo "glab mr checkout ${1:-<PR#>} ; git switch ${2:-<MAIN-BRANCH>} ; git merge -S --no-ff - ; git push origin ${2:-<MAIN-BRANCH>}" '
+repo-open: repo view -w
+repo-open-mcsp-awsgov-test: repo view -w mcsp-iac-test/mcsp-awsgov-test
+repo-open-mcsp-awsgov-prep2: repo view -w mcsp-iac-prep/mcsp-awsgov-prep
+repo-open-mcsp-awsgov-prep: repo view -w mcsp-iac-nonprod/mcsp-awsgov-preprod
+repo-open-mcsp-awsgov-prod: repo view -w mcsp-iac-prod/mcsp-awsgov-prod
+repo-mcsp-iac-sre-modules: repo view -w ibm-saas-platform/mcsp-iac-sre-modules

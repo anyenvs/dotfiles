@@ -11,9 +11,15 @@ ${custom.os}$custom$character $kubernetes$helm
 $nix_shell$aws$azure$cmd_duration
 [$shell\\$](cyan) [❯](bold green) """
 ## ➜
-scan_timeout = 30
-command_timeout = 1000
+## Timeout for starship to scan files (in milliseconds).
+scan_timeout = 500
+## Inserts a blank line between shell prompts
 add_newline = true
+## Timeout for commands executed by starship (in milliseconds).
+command_timeout = 3000
+#command_timeout = 3600000
+## Ignore global command_timeout setting and keep running external commands, no matter how long they take.
+#ignore_timeout = true
 
 [custom]
 [custom.os]
