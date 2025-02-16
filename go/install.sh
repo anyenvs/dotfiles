@@ -22,11 +22,15 @@ _go-alt-init() {
     # GO Alternative version
     ###
     export GOALT=${GOALT:-1.17.11}
-    GOROOT=$GOPATH/go${GOALT} go install golang.org/dl/go${GOALT}@latest ; GOROOT=$GOPATH/go${GOALT} go${GOALT} download ;
+    test -z "$GOPATH" && export GOPATH=$HOME/go${GOALT} ;
+    test -d $GOPATH || mkdir -pv $GOPATH ;
+    GOROOT=$GOPATH GO111MODULE=on CGO_ENABLED="0" go install golang.org/dl/go${GOALT}@latest ;
+    GOROOT=$GOPATH GO111MODULE=on CGO_ENABLED="0"  go${GOALT} download ;
     #echo -e 'GOROOT=$HOME/go/go${GOALT}\nGOTOOLDIR=$HOME/go/go${GOALT}/pkg/tool/darwin_amd64' >>"/Users/malinovv/Library/Application Support/go/env"
 }
 
 GO_MODULES=(
+    ## https://github.com/getsops/sops/pull/911#issuecomment-1004922856
     # go.mozilla.org/sops/v3/cmd/sops@latest ## deprecated
     github.com/getsops/sops/v3/cmd/sops@latest
     github.com/danielmiessler/fabric@latest
@@ -40,6 +44,7 @@ _go-modules() {
     # GO packages
     # - Sops
     # ######
+    test -d $HOME/go/bin || mkdir -pv $HOME/go/bin
     GO_MODULES=( ${@} )
     for mod in ${GO_MODULES[@]} ;do
         #GOBIN=$HOME/go/bin GO111MODULE=on CGO_ENABLED="0" go${GOALT} install go.mozilla.org/sops/v3/cmd/sops@latest  ## SOPS can only be install unsing Goland <= 1.17

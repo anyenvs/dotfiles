@@ -6,7 +6,7 @@
 ##  ( cd "$ICLOUD_PATH"/opt/proxy ; docker compose up )
 ##  ( cd "$ICLOUD_PATH"/opt/proxy ; docker compose ps )
 ## --------------------------------------------------------------------------------------
-version: '3.9'
+#version: '3.9'
 ## Main Image Name and Dockerfile
 x-dockerfile: &dockerfile
   #${MNT:-proxy}/Dockerfile
@@ -116,8 +116,11 @@ services:
     ports:
       - 9050:9050
       - 8118:8118
+    platform:       "linux/arm64"
     build:
       <<: *build
+      platforms:    [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
+      #platforms:    [ "linux/arm64","linux/arm/v7" ]
     deploy:
       <<: *deploy
     dns:
@@ -163,8 +166,6 @@ services:
   ## PROXY TOOLS
   ## ###################################################################### ##
   tools:
-    #platform:       linux/arm/v7
-    #platform:       linux/arm64
     network_mode:   host
     hostname:       proxy-tools
     container_name: proxy-tools
@@ -172,6 +173,7 @@ services:
     # To avoid issue with named volume and mounting time
     <<: *security-opts
     #cap_add: [ SYS_ADMIN, SYS_TIME ]
+    platform:       "linux/arm64"
     build:
       context:    ./
       dockerfile: *dockerfileTools
@@ -181,7 +183,7 @@ services:
       #network: host
       args:
         *monorepoArgs
-      #platforms:    [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
+      platforms:    [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
       #platforms:    [ "linux/arm64","linux/arm/v7" ]
     dns:
       - 192.168.1.1
@@ -201,8 +203,6 @@ services:
   ## CONFD
   ## ###################################################################### ##
   confd:
-    #platform:       linux/arm/v7
-    #platform:       linux/arm64
     network_mode:   host
     hostname:       confd
     container_name: confd
@@ -210,6 +210,7 @@ services:
     # To avoid issue with named volume and mounting time
     <<: *security-opts
     #cap_add: [ SYS_ADMIN, SYS_TIME ]
+    platform:       "linux/arm64"
     build:
       context:    ./
       dockerfile: *dockerfileConfd
@@ -218,7 +219,7 @@ services:
       #network: host
       args:
         *monorepoArgs
-      #platforms:     [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
+      platforms:     [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
       #platforms:    [ "linux/arm64","linux/arm/v7" ]
     dns:
       - 192.168.1.1
