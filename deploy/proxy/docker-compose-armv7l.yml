@@ -9,10 +9,7 @@
 #version: '3.9'
 ## Main Image Name and Dockerfile
 x-dockerfile: &dockerfile
-  #${MNT:-proxy}/Dockerfile
-  ${MNT:-proxy}/Dockerfile.armv7
-x-dockerfile-armv7: &dockerfile
-  ${MNT:-proxy}/Dockerfile.armv7
+  ${MNT:-proxy}/Dockerfile
 x-image: &image
   proxy:alpine-edge
   #proxy:${DIST:-alpine-edge}
@@ -32,9 +29,8 @@ x-dockerfileConfd: &dockerfileConfd
 x-monorepoArgs: &monorepoArgs
   MNT: ${MNT}
   #DIST: debian:bullseye-slim
-  #DIST: alpine:edge
-  ## WCLOUD armv7 works only with alpine:3.17
-  DIST: alpine:3.17
+  DIST: alpine:edge
+  #DIST: arm32v7/alpine:edge
   EXPOSE: 8118 9050
   PORT_EXPOSE_SOCKS: 9050
   PORT_EXPOSE_HTTP: 8118
@@ -55,11 +51,11 @@ x-monorepoVolumes: &monorepoVolumes
   #### local config mappings
   #- .config/.bash_history:/root/.bash_history
   #- ${MNT}${HOME}/work/repos:/opt/repos
-  #- /opt/repos:/opt/repos
-  #- ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/docker-config.json:/root/.docker/docker-config.json
-  #- ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/kube-config.yml:/root/.kube/config
-  #- ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/gitconfig:/root/.gitconfig
-  #- ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/gnupg:/root/.gnupg
+  - /opt/repos:/opt/repos
+  - ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/docker-config.json:/root/.docker/docker-config.json
+  - ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/kube-config.yml:/root/.kube/config
+  - ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/gitconfig:/root/.gitconfig
+  - ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/gnupg:/root/.gnupg
   - ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/.bash_history:/root/.bash_history
 x-security-opts: &security-opts
   privileged: true
@@ -77,7 +73,7 @@ x-build: &build
   #cap_add: [ SYS_ADMIN, SYS_TIME ]
   context:    ./
   dockerfile: *dockerfile
-  network: host
+  #network: host
   args:
     *monorepoArgs
   #platforms:     [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
@@ -103,9 +99,11 @@ services:
   ## PROXY
   ## ###################################################################### ##
   proxy:
-    #platform:       linux/armv7,linux/amd64,linux/arm64,linux/arm/v7
-    #platform:       linux/arm/7l
-    #platform:       linux/arm64
+    #platform:      linux/armv7  ## no match for platform in manifes
+    #platform:       linux/arm/7l ## no match for platform in manifes
+    platform:      linux/arm/v7
+    #platform:      linux/arm64
+    #platform:      linux/amd64
     network_mode:   host
     hostname:       proxy
     #container_name: proxy
@@ -116,11 +114,8 @@ services:
     ports:
       - 9050:9050
       - 8118:8118
-    platform:       "linux/arm64"
     build:
       <<: *build
-      #platforms:    [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
-      #platforms:    [ "linux/arm64","linux/arm/v7" ]
     deploy:
       <<: *deploy
     dns:
@@ -161,11 +156,12 @@ services:
     #entrypoint:   sleep 9999d
     entrypoint:   runsvdir /etc/service
     volumes: *monorepoVolumes
-
   ## ###################################################################### ##
   ## PROXY TOOLS
   ## ###################################################################### ##
   tools:
+    platform:       linux/arm/v7
+    #platform:      linux/arm64
     network_mode:   host
     hostname:       proxy-tools
     container_name: proxy-tools
@@ -173,17 +169,15 @@ services:
     # To avoid issue with named volume and mounting time
     <<: *security-opts
     #cap_add: [ SYS_ADMIN, SYS_TIME ]
-    platform:       "linux/arm64"
     build:
       context:    ./
       dockerfile: *dockerfileTools
       ## failed to solve: granting entitlement security.insecure is not allowed by build daemon configuration
       #privileged: true
-      ## failed to solve: granting entitlement network.host is not allowed by build daemon configuration
       #network: host
       args:
         *monorepoArgs
-      platforms:    [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
+      #platforms:    [ "linux/amd64","linux/arm64","linux/arm/v7" ]
       #platforms:    [ "linux/arm64","linux/arm/v7" ]
     dns:
       - 192.168.1.1
@@ -198,11 +192,12 @@ services:
       ## COUNTRY_CODE={ua} docker-compose config proxy
       ## COUNTRY_CODE={fr},{pt docker-compose config proxy
       TOR_EXITNODES: ${COUNTRY_CODE-{ua}}
-
   ## ###################################################################### ##
   ## CONFD
   ## ###################################################################### ##
   confd:
+    platform:       linux/arm/v7
+    #platform:      linux/arm64
     network_mode:   host
     hostname:       confd
     container_name: confd
@@ -210,7 +205,6 @@ services:
     # To avoid issue with named volume and mounting time
     <<: *security-opts
     #cap_add: [ SYS_ADMIN, SYS_TIME ]
-    platform:       "linux/arm64"
     build:
       context:    ./
       dockerfile: *dockerfileConfd
@@ -219,7 +213,7 @@ services:
       #network: host
       args:
         *monorepoArgs
-      platforms:     [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
+      #platforms:     [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
       #platforms:    [ "linux/arm64","linux/arm/v7" ]
     dns:
       - 192.168.1.1
