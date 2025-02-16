@@ -32,6 +32,7 @@ certifi
 cryptography
 ## https://dev.to/emma_donery/python-dotenv-keep-your-secrets-safe-4ocn#:~:text=Python-dotenv%20is%20a%20Python,for%20the%20current%20user%20environment.
 python-dotenv
+debugpy
 
 ##
 requests
