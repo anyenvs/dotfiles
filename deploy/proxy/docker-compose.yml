@@ -2,9 +2,9 @@
 ##
 ## How to build and run proxy image from compose:
 ##  ** inspired by : https://github.com/dockage/confd/tree/master/alpine/3.11 **
-##  ( cd "$ICLOUD_PATH"/opt/proxy ; docker compose build )
-##  ( cd "$ICLOUD_PATH"/opt/proxy ; docker compose up )
-##  ( cd "$ICLOUD_PATH"/opt/proxy ; docker compose ps )
+##  ( cd "$ICLOUD_PATH"/opt/proxy ; docker-compose build proxy )
+##  ( cd "$ICLOUD_PATH"/opt/proxy ; docker-compose up )
+##  ( cd "$ICLOUD_PATH"/opt/proxy ; docker-compose ps )
 ## --------------------------------------------------------------------------------------
 #version: '3.9'
 ## Main Image Name and Dockerfile
@@ -14,7 +14,8 @@ x-dockerfile: &dockerfile
 x-dockerfile-armv7: &dockerfile
   ${MNT:-proxy}/Dockerfile.armv7
 x-image: &image
-  proxy:alpine-edge
+  proxy:${DIST:-alpine-edge}
+  #icr.io/automation-saas-platform/mcsp-sre/proxy:${DIST:-alpine-edge}
   #proxy:${DIST:-alpine-edge}
   #proxy:${DIST:-debian-bullseye}
 ## DEBUG BASE Image
@@ -33,6 +34,7 @@ x-monorepoArgs: &monorepoArgs
   MNT: ${MNT}
   #DIST: debian:bullseye-slim
   #DIST: alpine:edge
+  #DIST: arm32v7/alpine:edge
   ## WCLOUD armv7 works only with alpine:3.17
   DIST: alpine:3.17
   EXPOSE: 8118 9050
@@ -61,23 +63,30 @@ x-monorepoVolumes: &monorepoVolumes
   #- ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/gitconfig:/root/.gitconfig
   #- ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/gnupg:/root/.gnupg
   - ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/.bash_history:/root/.bash_history
+x-dns: &dns
+  - 192.168.1.1
+  - 8.8.8.8
+  - 4.4.4.4
 x-security-opts: &security-opts
   privileged: true
   cap_add:
     - SYS_ADMIN
     - SYS_TIME
-  security_opt:
-    - seccomp:unconfined
-    - label:disable
+  #security_opt:
+  #  - seccomp=unconfined
+  #  - label=disable
   tmpfs:
     - /run
     - /run/lock
 x-build: &build
-  #privileged: true
-  #cap_add: [ SYS_ADMIN, SYS_TIME ]
   context:    ./
   dockerfile: *dockerfile
-  network: host
+  ## failed to solve: granting entitlement security.insecure is not allowed by build daemon configuration
+  #privileged: true
+  #cap_add: [ NET_RAW ]
+  #cap_add: [ SYS_ADMIN, SYS_TIME ]
+  ## failed to solve: granting entitlement network.host is not allowed by build daemon configuration
+  #network: host
   args:
     *monorepoArgs
   #platforms:     [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
@@ -95,6 +104,7 @@ x-deploy: &deploy
     reservations:
       cpus: '0.2'
       memory: 128M
+
 ## ###################################################################### ##
 ##  SERVICES                                                              ##
 ## ###################################################################### ##
@@ -103,30 +113,35 @@ services:
   ## PROXY
   ## ###################################################################### ##
   proxy:
-    #platform:       linux/armv7,linux/amd64,linux/arm64,linux/arm/v7
-    #platform:       linux/arm/7l
-    #platform:       linux/arm64
     network_mode:   host
     hostname:       proxy
     #container_name: proxy
     image:       *image
-    # To avoid issue with named volume and mounting time
-    <<: *security-opts
-    #cap_add: [ SYS_ADMIN, SYS_TIME ]
     ports:
       - 9050:9050
       - 8118:8118
-    platform:       "linux/arm64"
+    platform:      linux/arm/v7
+    #platform:       linux/amd64
+    #platform:       linux/arm64
+    #platform:       linux/arm/v7,linux/amd64,linux/arm64
     build:
       <<: *build
-      #platforms:    [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
+      #platforms:    [ "linux/amd64","linux/arm64","linux/arm/v7" ]
       #platforms:    [ "linux/arm64","linux/arm/v7" ]
+      #platforms:
+      #  - linux/amd64
+      #  - linux/arm64
+      #  # - linux/arm/v7
+      #  - linux/arm64/v8
+      #  # - linux/armv7 ## no match for platform in manifest: not found
+      #  # - linux/ppc64le
+      #  # - linux/s390x
     deploy:
       <<: *deploy
-    dns:
-      - 192.168.1.1
-      - 8.8.8.8
-      - 4.4.4.4
+    # To avoid issue with named volume and mounting time
+    <<: *security-opts
+    #cap_add: [ SYS_ADMIN, SYS_TIME ]
+    dns: *dns
     restart: always
     environment:
       ## https://docs.docker.com/compose/environment-variables/env-file/
@@ -165,39 +180,51 @@ services:
   ## ###################################################################### ##
   ## PROXY TOOLS
   ## ###################################################################### ##
-  tools:
-    network_mode:   host
-    hostname:       proxy-tools
-    container_name: proxy-tools
-    image:          *imageTools
-    # To avoid issue with named volume and mounting time
-    <<: *security-opts
-    #cap_add: [ SYS_ADMIN, SYS_TIME ]
-    platform:       "linux/arm64"
-    build:
-      context:    ./
-      dockerfile: *dockerfileTools
-      ## failed to solve: granting entitlement security.insecure is not allowed by build daemon configuration
-      #privileged: true
-      ## failed to solve: granting entitlement network.host is not allowed by build daemon configuration
-      #network: host
-      args:
-        *monorepoArgs
-      platforms:    [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
-      #platforms:    [ "linux/arm64","linux/arm/v7" ]
-    dns:
-      - 192.168.1.1
-      - 8.8.8.8
-      - 4.4.4.4
-    environment:
-      ## https://docs.docker.com/compose/environment-variables/env-file/
-      ## https://docs.docker.com/compose/environment-variables/env-file/
-      HOME_USER: ${HOME}
-      #ENABLE_IPV6: true
-      TZ: America/New_York
-      ## COUNTRY_CODE={ua} docker-compose config proxy
-      ## COUNTRY_CODE={fr},{pt docker-compose config proxy
-      TOR_EXITNODES: ${COUNTRY_CODE-{ua}}
+  #tools:
+  #  network_mode:   host
+  #  hostname:       proxy-tools
+  #  container_name: proxy-tools
+  #  image:          *imageTools
+  #  # To avoid issue with named volume and mounting time
+  #  <<: *security-opts
+  #  #cap_add: [ SYS_ADMIN, SYS_TIME ]
+  #  ## ###################################################################### ##
+  #  ## NOTE: sops is not available for armv7
+  #  ##   https://github.com/getsops/sops/releases
+  #  ## Alertnative:
+  #  ##   https://pkgs.alpinelinux.org/package/edge/community/armv7/sops
+  #  ## ###################################################################### ##
+  #  #platform:       linux/arm/v7
+  #  #platform:      linux/arm64
+  #  platform:      linux/amd64
+  #  build:
+  #    context:    ./
+  #    dockerfile: *dockerfileTools
+  #    ## failed to solve: granting entitlement security.insecure is not allowed by build daemon configuration
+  #    #privileged: true
+  #    ## failed to solve: granting entitlement network.host is not allowed by build daemon configuration
+  #    #network: host
+  #    args:
+  #      *monorepoArgs
+  #    #platforms:    [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
+  #    #platforms:
+  #    #  - linux/amd64
+  #    #  - linux/arm64
+  #    #  - linux/arm/v7
+  #    #  # - linux/arm64/v8
+  #    #  # - linux/armv7 ## no match for platform in manifest: not found
+  #    #  # - linux/ppc64le
+  #    #  # - linux/s390x
+  #  dns: *dns
+  #  environment:
+  #    ## https://docs.docker.com/compose/environment-variables/env-file/
+  #    ## https://docs.docker.com/compose/environment-variables/env-file/
+  #    HOME_USER: ${HOME}
+  #    #ENABLE_IPV6: true
+  #    TZ: America/New_York
+  #    ## COUNTRY_CODE={ua} docker-compose config proxy
+  #    ## COUNTRY_CODE={fr},{pt docker-compose config proxy
+  #    TOR_EXITNODES: ${COUNTRY_CODE-{ua}}
 
   ## ###################################################################### ##
   ## CONFD
@@ -210,21 +237,29 @@ services:
     # To avoid issue with named volume and mounting time
     <<: *security-opts
     #cap_add: [ SYS_ADMIN, SYS_TIME ]
-    platform:       "linux/arm64"
+    platform:       linux/arm/v7
+    #platform:      linux/arm64
+    #platform:      linux/arm64
     build:
       context:    ./
       dockerfile: *dockerfileConfd
       ## failed to solve: granting entitlement security.insecure is not allowed by build daemon configuration
       #privileged: true
+      ## failed to solve: granting entitlement network.host is not allowed by build daemon configuration
       #network: host
       args:
         *monorepoArgs
-      platforms:     [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
+      #platforms:     [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
       #platforms:    [ "linux/arm64","linux/arm/v7" ]
-    dns:
-      - 192.168.1.1
-      - 8.8.8.8
-      - 4.4.4.4
+      #platforms:
+      #  - linux/amd64
+      #  - linux/arm64
+      #  - linux/arm/v7
+      #  # - linux/arm64/v8
+      #  # - linux/armv7 ## no match for platform in manifest: not found
+      #  # - linux/ppc64le
+      #  # - linux/s390x
+    dns: *dns
     environment:
       ## https://docs.docker.com/compose/environment-variables/env-file/
       ## https://docs.docker.com/compose/environment-variables/env-file/

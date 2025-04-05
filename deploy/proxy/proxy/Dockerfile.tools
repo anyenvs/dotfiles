@@ -3,7 +3,8 @@
 FROM golang:alpine AS SOPSBULD
 
 ARG APP_NAME=${APP_NAME:-tools}
-ARG SOPS_VERSION=${SOPS_VERSION:-3.8.1}
+ARG SOPS_VERSION=${SOPS_VERSION:-3.10.1}
+ARG SOPS_URL=${SOPS_URL:-https://api.github.com/repos/getsops/sops/releases/latest}
 
 WORKDIR /go/src/bin
 
@@ -13,7 +14,7 @@ RUN set -xe ;\
     apk --update --no-cache add gnupg jq ca-certificates git make &&\
     apk --update add wget bind-tools &&\
     ping -c 6 api.github.com ; dig +answer +noall api.github.com &&\
-    SOPS_URL=$(wget -qO- https://api.github.com/repos/mozilla/sops/releases/latest | jq -r '.assets[] | select(.name | endswith("'${_OS}.${_ARCH}'")) | .browser_download_url' 2>/dev/null ) &&\
+    SOPS_URL=$(wget -qO- https://api.github.com/repos/getsops/sops/releases/latest | jq -r '.assets[] | select(.name | endswith("'${_OS}.${_ARCH}'")) | .browser_download_url' 2>/dev/null ) &&\
     ( test ! -d /go/bin && mkdir -pv /go/bin || true ) &&\
     test -n "${SOPS_URL}" && wget -qO /go/bin/sops ${SOPS_URL} && chmod +x /go/bin/sops &&\
     test -n "${SOPS_URL}" || { echo '===> sops/releases/latest binary for ${_OS}.${_ARCH} not found' ; }
