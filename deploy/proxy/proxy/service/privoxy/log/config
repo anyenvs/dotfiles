@@ -1,0 +1,26 @@
+#!/bin/sh
+# svlogd configuration for service
+
+# Keep last 7 days of logs (rotates when reaches size limit)
+s10000000
+n7
+
+# Timestamp format
+t
+
+# Compress old logs with gzip
+!gzip
+
+# Don't log lines matching these patterns (optional)
+-*.notice
+-*.info
+# -*.debug  # Uncomment to exclude debug messages
+
+# Specific patterns to keep
++*.warn
++*.err
++*.emerg
++*.crit
+
+# Log file permissions
+#U tor:tor

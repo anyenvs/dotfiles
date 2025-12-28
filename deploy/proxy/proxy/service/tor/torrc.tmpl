@@ -13,14 +13,15 @@ SocksPolicy accept *
 
 #SocksListenAddress 0.0.0.0
 #SocksPort 0.0.0.0:9050
-SocksPort 0.0.0.0:{{ getv "/port/expose/socks" }}
+SocksPort 0.0.0.0:{{ getv "/port/expose/socks" "9050" }}
 SocksPort auto
+ControlPort 19051
 
 ## Torified DNS
 #DNSPort 0.0.0.0:9053
 #DNSListenAddress 0.0.0.0
 #DNSPort 127.0.0.1:9053 IsolateClientAddr IsolateSOCKSAuth IsolateClientProtocol IsolateDestPort IsolateDestAddr
-DNSPort {{ getv "/port/expose/dns" }} IsolateClientAddr IsolateSOCKSAuth IsolateClientProtocol IsolateDestPort IsolateDestAddr
+DNSPort {{ getv "/port/expose/dns" "127.0.0.1:9053" }} IsolateClientAddr IsolateSOCKSAuth IsolateClientProtocol IsolateDestPort IsolateDestAddr
 AutomapHostsOnResolve 1
 AutomapHostsSuffixes .exit, .onion
 #ClientDNSRejectInternalAddresses 1
@@ -38,13 +39,18 @@ LongLivedPorts 21, 22, 80, 443, 706, 1863, 5050, 5190, 5222, 5223, 6523, 6667, 6
 # StrictNodes 1 - Means TOR will use only this country exit nodes.
 StrictNodes 1
 #Country codes are case-insensitive. The code "{??}" refers to nodes whose country cant be identified
-ExcludeNodes {{ getv "/tor/excludenodes" "Unnamed,default,{af},{dz},{ao},{am},{az},{bh},{by},{bj},{bn},{mm},{bf},{bi},{kh},{cm},{cf},{td},{cn},{co},{km},{cd},{ci},{cu},{dj},{eg},{gq},{er},{et},{ga},{gm},{ge},{gn},{hn},{hk},{id},{ir},{iq},{jo},{kw},{kg},{la},{ly},{mo},{mg},{my},{mr},{yt},{ma},{ng},{ne},{kp},{om},{pk},{ps},{qa},{rw},{sa},{sn},{sl},{sg},{so},{kr},{lk},{sd},{sz},{sy},{tw},{tj},{th},{tg},{tn},{tr},{tm},{ae},{uz},{ve},{vn},{ye},{zw},{ie},{je},{gg},{im},{ai},{bm},{aq},{io},{vg},{ky},{fk},{gi},{ms},{tc},{us},{mp},{pr},{vi},{as},{ht},{fm},{gu},{gl},{nf},{nz},{tk},{ck},{nu},{cy},{al},{ar},{bt},{bo},{cg},{ch},{ec},{fj},{gt},{gw},{il},{ke},{lb},{ls},{lr},{mk},{mw},{mv},{np},{ni},{py},{sc},{ug},{zm},{us},{??}" }}
-ExcludeExitNodes {{ getv "/tor/excludeexitnodes" "{ag},{bb},{bz},{bw},{ch},{bg},{dm},{gh},{gd},{gy},{jm},{ki},{mu},{me},{na},{nr},{pg},{kn},{lc},{vc},{ws},{sb},{so},{sr},{tz},{to},{tt},{tv},{us},{??}" }}
+{{- $ExcludeNodes := "Unnamed,default,{af},{dz},{ao},{am},{az},{bh},{by},{bj},{bn},{mm},{bf},{bi},{kh},{cm},{cf},{td},{cn},{co},{km},{cd},{ci},{cu},{dj},{eg},{gq},{er},{et},{ga},{gm},{ge},{gn},{hn},{hk},{id},{ir},{iq},{jo},{kw},{kg},{la},{ly},{mo},{mg},{my},{mr},{yt},{ma},{ng},{ne},{kp},{om},{pk},{ps},{qa},{rw},{sa},{sn},{sl},{sg},{so},{kr},{lk},{sd},{sz},{sy},{tw},{tj},{th},{tg},{tn},{tr},{tm},{ae},{uz},{ve},{vn},{ye},{zw},{ie},{je},{gg},{im},{ai},{bm},{aq},{io},{vg},{ky},{fk},{gi},{ms},{tc},{us},{mp},{pr},{vi},{as},{ht},{fm},{gu},{gl},{nf},{nz},{tk},{ck},{nu},{cy},{al},{ar},{bt},{bo},{cg},{ch},{ec},{fj},{gt},{gw},{il},{ke},{lb},{ls},{lr},{mk},{mw},{mv},{np},{ni},{py},{sc},{ug},{zm},{us},{??}" }}
+ExcludeNodes {{ if eq (getv "/tor/excludenodes" "") "" }}{{ $ExcludeNodes }}{{ else }}{{ getv "/tor/excludenodes" $ExcludeNodes }}{{ end }}
+#ExcludeNodes {{ getv "/tor/excludenodes" "Unnamed,default,{af},{dz},{ao},{am},{az},{bh},{by},{bj},{bn},{mm},{bf},{bi},{kh},{cm},{cf},{td},{cn},{co},{km},{cd},{ci},{cu},{dj},{eg},{gq},{er},{et},{ga},{gm},{ge},{gn},{hn},{hk},{id},{ir},{iq},{jo},{kw},{kg},{la},{ly},{mo},{mg},{my},{mr},{yt},{ma},{ng},{ne},{kp},{om},{pk},{ps},{qa},{rw},{sa},{sn},{sl},{sg},{so},{kr},{lk},{sd},{sz},{sy},{tw},{tj},{th},{tg},{tn},{tr},{tm},{ae},{uz},{ve},{vn},{ye},{zw},{ie},{je},{gg},{im},{ai},{bm},{aq},{io},{vg},{ky},{fk},{gi},{ms},{tc},{us},{mp},{pr},{vi},{as},{ht},{fm},{gu},{gl},{nf},{nz},{tk},{ck},{nu},{cy},{al},{ar},{bt},{bo},{cg},{ch},{ec},{fj},{gt},{gw},{il},{ke},{lb},{ls},{lr},{mk},{mw},{mv},{np},{ni},{py},{sc},{ug},{zm},{us},{??}" }}
+{{- $ExcludeExitNodes := "{ag},{bb},{bz},{bw},{ch},{bg},{dm},{gh},{gd},{gy},{jm},{ki},{mu},{me},{na},{nr},{pg},{kn},{lc},{vc},{ws},{sb},{so},{sr},{tz},{to},{tt},{tv},{us},{??}" }}
+ExcludeExitNodes {{ if eq (getv "/tor/excludeexitnodes" "") "" }}{{ $ExcludeExitNodes }}{{ else }}{{ getv "/tor/excludeexitnodes" $ExcludeExitNodes }}{{ end }}
+#ExcludeExitNodes {{ getv "/tor/excludeexitnodes" $ExcludeExitNodes }}
 #ExitNodes {ca},{gb},{jp},{fr},{de}
 #ExitNodes {ru},{fr}
 #EntryNodes AccessNow000,AccessNow001,AccessNow002,AccessNow003,AccessNow004,AccessNow005,AccessNow006,AccessNow007,AccessNow008,AccessNow009,AccessNow010,AccessNow011,AccessNow012,AccessNow013,AccessNow014,AccessNow015,AccessNow016,AccessNow017,AccessNow018,AccessNow019,spfTOR3,spfTOR1e1,spfTOR1e2,spfTOR1e3,spfTOR4e1,spfTOR4e2,spfTOR4e3,spfTOR5e1,spfTOR5e2,spfTOR5e3,orion,orilla,destiny,chulak,aurora,assk,assk2,sofia,amartysen,lumumba,ethanzuckerman,politkovskaja,politkovskaja2,edwardsnowden0,edwardsnowden1,edwardsnowden2,hessel0,hessel1,hessel2,ekumen,marcuse1,marcuse2,marylou1,marylou2,chaoscomputerclub27,chaoscomputerclub28,chaoscomputerclub29,chaoscomputerclub30,atticus,blanqui,thoreau,enjolras,luxemburg,bakunin,jaures,DFRI0,DFRI1,DFRI3,DFRI4,hviv103,hviv104,hviv105,wagtail,toreffiorg
 #ExitNodes {ua}
-ExitNodes {{ getv "/tor/exitnodes" "{ua}" }}
+{{- $ExitNodesDefault := "{ua}" }}
+ExitNodes {{ if eq (getv "/tor/exitnodes" "") "" }}{{ $ExitNodesDefault }}{{ else }}{{ getv "/tor/exitnodes" $ExitNodesDefault }}{{ end }}
 
 #https://wiki.archlinux.org/index.php/Tor#Tor_configuration
 #https://www.torproject.org/docs/tor-manual.html.en#_general_options

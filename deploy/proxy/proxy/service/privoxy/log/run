@@ -1,0 +1,7 @@
+#!/bin/sh
+
+LOGPATH=/var/log/privoxy
+test -d $LOGPATH || mkdir -p $LOGPATH
+
+#exec chpst -u tor:tor svlogd -tt $LOGPATH
+exec svlogd -tt $LOGPATH

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# forward stderr to stdout for use with runit svlogd
+exec 2>&1
+
+# Source environment if exists
+test -d "/etc/service/tor/env" &&\
+    for i in /etc/service/tor/env/*; do
+        test -f "$i" && . "$i"
+    done
+
+# run confd to render out the config
+confd -onetime -backend env -log-level debug
+sleep 2
+
+# Set up PID directory
+TORRC={{ getv "/torrc" "/etc/tor/torrc" }}
+PIDFILE="/var/run/tor/tor.pid"
+mkdir -p "$(dirname "$PIDFILE")"
+
+# run tor proxy
+#tor --RunAsDaemon 0 --PidFile /var/run/tor/tor.pid --DataDirectory /var/lib/tor --SocksPort 9050 --ControlPort 9051 --Log "notice stdout"
+tor ${TORRC:+-f $TORRC} --PidFile "$PIDFILE"

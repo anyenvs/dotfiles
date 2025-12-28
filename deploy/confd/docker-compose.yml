@@ -1,4 +1,5 @@
-version: '3.8'
+## attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion
+#version: '3.8'
 ## Main Image Name and Dockerfile
 x-dockerfile: &dockerfile
   Dockerfile.confd-alpine
@@ -7,23 +8,28 @@ x-dockerfile: &dockerfile
   #Dockerfile-awscli.ubi
   #deploy/docker/Dockerfile
 x-image: &image
+  confd:latest
+x-imageICR: &imageICR
   icr.io/automation-saas-platform/mcsp-sre/confd:${TAG:-latest}
 x-appArgs: &appArgs
   #DIST: debian:bullseye-slim
   DIST: alpine:edge
   PORT_EXPOSE: 8000
   APP_NAME: confd
-  ENTRYPOINT: deploy/entrypoint.sh
-  SOPS_VERSION: 3.8.1
+  ENTRYPOINT: confd/entrypoint.sh
+  SOPS_VERSION: 3.10.1
+  RUNIT_TIMER_CONFD: 300
 x-appVolumes: &appVolumes
   - .:./
 x-dns: &dns
   - 192.168.1.1
   - 8.8.8.8
+  - 4.4.4.4
 x-security-opts: &security-opts
   privileged: true
-  #cap_add:
-  #  - SYS_ADMIN
+  cap_add:
+    - SYS_ADMIN
+    - SYS_TIME
   #security_opt:
   #  - seccomp:unconfined
   #  - label:disable
@@ -40,21 +46,44 @@ services:
   ##
   confd:
     network_mode: host
-    hostname:     ${APP_NAME}
+    hostname:     ${APP_NAME:-confd}
     image:        *image
+    # To avoid issue with named volume and mounting time
+    <<: *security-opts
+    ## Keep platform for confd disabled to avoid build issues
+    #platform:       linux/arm/v7
+    #platform:       linux/arm64
+    #platform:       linux/amd64
     build:
       context:    ./
       dockerfile: *dockerfile
       args:
         *appArgs
+      #platforms:
+        #- linux/arm/v7
+        #- linux/arm64
+        #- linux/amd64
     restart: always
+    dns: *dns
     environment:
       - HOME=/root
     #entrypoint: sh -c '/app/entrypoint.sh'
+    entrypoint: runsvdir /etc/service
     #volumes: *appVolumes
-    dns: *dns
-    # To avoid issue with named volume and mounting time
-    <<: *security-opts
+  confdICR:
+    network_mode: host
+    hostname:     ${APP_NAME:-confd}
+    image:        *imageICR
+    build:
+      context:    ./
+      dockerfile: *dockerfile
+      args:
+        *appArgs
+      #platforms:
+        #- linux/arm/v7
+        #- linux/arm64
+        #- linux/amd64
+
 
 volumes: {}
   #redis_data:

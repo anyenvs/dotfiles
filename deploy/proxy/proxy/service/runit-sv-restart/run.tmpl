@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# forward stderr to stdout for use with runit svlogd
+exec 2>&1
+
+echo "["$(date "+%F-%T.%Z")"] RunIt Controller started" ;
+
+SV_PATH="/etc/service/runit-sv-restart"
+SV_VARS="./runit.vars"
+RUNIT_SV_MAIN={{ getv "/runit/sv/main" "runit-sv-restart" }}
+
+## Source environment if exists
+test -d "$SV_PATH/env" &&\
+    for i in $SV_PATH/env/*; do
+        test -f "$i" && . "$i"
+    done
+
+while true; do
+
+    echo "["$(date "+%F-%T.%Z")"] Restart of RunIt services..."
+
+    test -f "$SV_VARS" && . "$SV_VARS"
+    ## Run confd to render out the config
+    confd -onetime -backend env -log-level debug ;
+    sleep 2 ;
+
+    RUNIT_SV_RESTART="/etc/service/${RUNIT_SV_RESTART:-*/}"
+    test -n "${RUNIT_SV_RESTART}" && echo "RUNIT_SV_RESTART is set to: ${RUNIT_SV_RESTART}" || echo "RUNIT_SV_RESTART is not set, restarting all services except runit-restart"
+
+    ## Restart all services except runit-restart
+    for service in $RUNIT_SV_RESTART; do
+        svname=$(basename "$service")
+        if [ "$svname" != "$RUNIT_SV_MAIN" ] && [ -f "$service/supervise/pid" ]; then
+            echo "["$(date "+%F-%T.%Z")"] Restarting $svname..."
+            sv reload "$svname"
+            #sv restart /etc/service/tor
+            sleep 2
+        fi
+    done
+
+    #for svname in $RUNIT_SV_RESTART; do
+    #    if [ -f "/etc/service/$svname/supervise/pid" ]; then
+    #        echo "["$(date "+%F-%T.%Z")"] Restarting $svname..."
+    #        sv restart "$svname"
+    #
+    #        sleep 2
+    #    fi
+    #done
+
+    echo "["$(date "+%F-%T.%Z")"] RunIt Controller restart completed."
+
+    ## Wait for RUNIT_TIMER_RESTART seconds
+    sleep ${RUNIT_TIMER_RESTART:-3601}
+done

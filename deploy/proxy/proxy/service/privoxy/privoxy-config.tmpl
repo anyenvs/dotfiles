@@ -6,10 +6,28 @@
 #        forward         10.*.*.*/        .
 #        forward         127.*.*.*/       .
 forward         192.168.*.*/     .
+## https://stackoverflow.com/questions/64835702/how-to-run-multiple-tor-privoxy-processes-for-scrapy-with-different-ips-at-the-s/64835731#64835731
+## https://www.privoxy.org/user-manual/config.html#SOCKS
 #forward-socks5 / localhost:9050 .
 #forward-socks5t / localhost:9050 .
-forward-socks5t / localhost:{{ getv "/port/expose/socks" }} .
-listen-address  0.0.0.0:{{ getv "/port/expose/http" }}  ## HTTP
+forward-socks5t / localhost:{{ getv "/port/expose/socks" "9050" }} .
+#forward-socks5t / localhost:{{ getv "/port/expose/socks2" "9060" }} .
+listen-address  0.0.0.0:{{ getv "/port/expose/http" "8118" }}  ## HTTP
+
+## https://www.privoxy.org/user-manual/config.html#ENABLE-PROXY-AUTHENTICATION-FORWARDING
+enable-proxy-authentication-forwarding  1
+
+## https://www.privoxy.org/user-manual/howto.html
+## openssl req -new -x509 -extensions v3_ca -keyout privoxy.pem -out privoxy.crt -days 3650
+## chmod 600 privoxy.pem
+## chown privoxy privoxy.pem
+## chown 501 privoxy.pem privoxy.crt
+#ca-directory /etc/privoxy/CA
+#ca-cert-file privoxy.crt
+#ca-key-file privoxy.pem
+#ca-password passphrasefromabove
+#certificate-directory /var/lib/privoxy/certs
+#trusted-cas-file /etc/ssl/certs/ca-certificates.crt
 
 user-manual /usr/share/doc/privoxy/user-manual
 confdir /etc/privoxy

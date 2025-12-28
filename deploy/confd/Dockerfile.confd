@@ -3,7 +3,7 @@ FROM golang:1.15-alpine AS BUILD
 
 ARG APP_NAME=${APP_NAME:-confd}
 ARG ENTRYPOINT='deploy/entrypoint.sh'
-ARG SOPS_VERSION=${SOPS_VERSION:-3.8.1}
+ARG SOPS_VERSION=${SOPS_VERSION:-3.10.1}
 WORKDIR /src/
 
 # download modules in separated layer, to speed up rebuild by utilising Docker layer caching system

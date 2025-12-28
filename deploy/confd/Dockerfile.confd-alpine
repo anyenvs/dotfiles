@@ -1,6 +1,19 @@
-FROM golang:1.15-alpine
+#ARG DIST=arm32v7/alpine:edge
+ARG DIST=alpine:edge
+# syntax=docker/dockerfile:1.3-labs
+## ######################################################################
+## STAGE_1: Build Confd
+## ######################################################################
+FROM golang:1.15-alpine AS configbuild
+#FROM golang:1.16-alpine AS configbuild
+#FROM arm32v7/golang:1.16-alpine AS configbuild
 
+ARG APP_NAME=${APP_NAME:-confd}
+ARG ENTRYPOINT='/app/entrypoint.sh'
+ARG SOPS_VERSION=${SOPS_VERSION:-3.10.1}
 ARG CONFD_VERSION=${CONFD_VERSION:-0.16.0}
+
+WORKDIR /src/
 
 ENV CONFD_VERSION=${CONFD_VERSION}
 
@@ -11,9 +24,55 @@ RUN set -xe ;\
     _OS=$(uname -s | tr '[:upper:]' '[:lower:]') && _ARCH=$(uname -m | tr '[:upper:]' '[:lower:]' | sed 's/x86_64/amd64/g; s/armv7.*/armv7/g; s/arm64/aarch64/g ') ;\
     apk add --no-cache \
     bzip2 make gcc && \
-    mkdir -p /go/src/github.com/kelseyhightower/confd && cd /go/src/github.com/kelseyhightower/confd && \
+    mkdir -p /go/src/github.com/kelseyhightower/confd && \
+    cd /go/src/github.com/kelseyhightower/confd && \
     tar --strip-components=1 -zxf /tmp/v${CONFD_VERSION}.tar.gz && \
     go install github.com/kelseyhightower/confd && \
-    rm -rf /tmp/v${CONFD_VERSION}.tar.gz
+    #go install github.com/kelseyhightower/confd@latest && \
+    rm -rf /tmp/v${CONFD_VERSION}.tar.gz ;\
+    exit $?
 
-CMD ["echo", "Confd build"]
+## #################################################################################################################
+## STAGE_2: Build Proxy
+##  ( cd ~/_dotfiles/deploy/proxy ; docker-compose -f ./docker-compose-armv7l.yml build proxy --check )
+##  ( cd ~/_dotfiles/deploy/proxy ; docker-compose -f ./docker-compose.yml build proxy --check )
+## #################################################################################################################
+FROM ${DIST}
+
+ARG MNT=${MNT:-./}
+ARG ENTRYPOINT='/app/entrypoint.sh'
+
+ADD $MNT/service/confd/ /etc/service/confd/
+ADD $MNT/service/assets/root/ /
+ADD $MNT/entrypoint.sh $ENTRYPOINT
+
+COPY --from=configbuild /go/bin/confd /usr/bin/confd
+
+RUN set -xe ;\
+    . /etc/os-release &&\
+    _OS=$(uname -s | tr '[:upper:]' '[:lower:]') && _ARCH=$(uname -m | tr '[:upper:]' '[:lower:]' | sed 's/x86_64/amd64/g; s/armv7.*/armv7/g; s/aarch64/arm64/g' ) &&\
+    echo "$VERSION_ID" | grep -q "3.17" || echo -e 'http://dl-cdn.alpinelinux.org/alpine/edge/main\nhttp://dl-cdn.alpinelinux.org/alpine/edge/testing\nhttp://dl-cdn.alpinelinux.org/alpine/edge/community' > /etc/apk/repositories ;\
+    echo "$VERSION_ID" | grep -q "3.17" || apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community tor runit  ;\
+    echo "$VERSION_ID" | grep -q "3.17" || apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main privoxy openrc  ;\
+    echo "$VERSION_ID" | grep -q "3.17" && apk add --repository=http://dl-cdn.alpinelinux.org/alpine/v3.17/community tor runit ;\
+    echo "$VERSION_ID" | grep -q "3.17" && apk add --repository=http://dl-cdn.alpinelinux.org/alpine/v3.17/main privoxy openrc ;\
+    ##
+    ## Additional packages
+    apk add --update ca-certificates vim curl bash jq whois wget &&\
+    apk add --no-cache netcat-openbsd &&\
+    ## Confd download
+    ## https://github.com/kelseyhightower/confd
+    ## https://theagileadmin.com/2015/11/12/templating-config-files-in-docker-containers/
+    #curl -sSLo /usr/bin/confd $(curl -sSL https://api.github.com/repos/kelseyhightower/confd/releases/latest | jq -r '.assets[]| select(.name | contains("linux-amd64")) | .browser_download_url') &&\
+    chmod +x /usr/bin/confd &&\
+    mkdir -pv /etc/confd/conf.d /etc/confd/templates &&\
+    ##
+    ln -svnf `ls -R /etc/service/**/*.tmpl` /etc/confd/templates/ &&\
+    ln -svnf `ls -R /etc/service/**/*.toml` /etc/confd/conf.d/ &&\
+    rc-update add local &&\
+    rc-update add confd &&\
+    chmod +x /etc/service/*/run /etc/service/*/log*/run $ENTRYPOINT || true ;\
+    exit $?
+
+CMD ["runsvdir", "/etc/service"]
+#CMD ["/app/entrypoint.sh"]
