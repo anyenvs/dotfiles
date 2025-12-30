@@ -46,6 +46,7 @@ _armv7-tools() {
     eval which {/usr/local/bin/busybox,} || ( f=/usr/local/bin/busybox ; test -f $f || wget -qO $f http://bin.entware.net/armv7sf-k3.2/installer/chroot/${f##*/} ; chmod +x $f ; $f --install ${f%/*} )
     ## GNU-Sed if not exist
     eval which {gsed,} || ( cd /usr/local/bin ; ln -svnf $(which sed) gsed );
+    mkdir -pv /usr/share/git-core/templates ;
     set +x
 }
 

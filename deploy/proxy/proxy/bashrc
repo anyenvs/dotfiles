@@ -1,0 +1,24 @@
+
+
+bind '"\e[A": history-search-backward'
+bind '"\e[B": history-search-forward'
+bind '"\e[C": forward-char'
+bind '"\e[D": backward-char'
+bind '"\e\e[D": backward-word'
+bind '"\e\e[C": forward-word'
+bind '"\ew": shell-kill-word'
+
+
+
+_haproxy-check() {
+  [ -n "${DEBUG}" ] && { export PS4='+ [${BASH_SOURCE##*/}:${LINENO}] ' ; set -x; }
+  haproxy -c -V -d -dr -dG -f /etc/haproxy/haproxy.cfg ; res=$? ;
+  test $res -eq 0 && echo "HAproxy config OK" || echo "HAproxy config ERROR" ;
+  test $res -eq 0 && sv reload haproxy ;
+  return $res
+}
+
+_haproxy-logs() {
+  [ -n "${DEBUG}" ] && { export PS4='+ [${BASH_SOURCE##*/}:${LINENO}] ' ; set -x; } ;
+  test -f /var/log/haproxy/current && tail -f /var/log/haproxy/current ;
+}

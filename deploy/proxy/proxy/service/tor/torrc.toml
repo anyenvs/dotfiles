@@ -9,5 +9,7 @@ keys = [
 "/port",
 "/tor",
 ]
-#check_cmd = "/app/bin/check {{ .src }}"
+#check_cmd = "/usr/bin/tor --defaults-torrc /usr/share/tor/tor-service-defaults-torrc --verify-config -f {{ .src }}"
 #reload_cmd = "service restart example"
+check_cmd = "tor --verify-config -f {{ .src }}"
+reload_cmd = "sv reload tor"

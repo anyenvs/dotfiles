@@ -7,7 +7,7 @@ FROM golang:1.15-alpine as CONFDBUILD
 
 ARG APP_NAME=${APP_NAME:-confd}
 ARG ENTRYPOINT='deploy/entrypoint.sh'
-ARG SOPS_VERSION=${SOPS_VERSION:-3.8.1}
+ARG SOPS_VERSION=${SOPS_VERSION:-3.10.1}
 ARG CONFD_VERSION=${CONFD_VERSION:-0.16.0}
 
 WORKDIR /src/
@@ -30,10 +30,13 @@ FROM confd:latest as CONFDBIN
 
 ## ######################################################################
 ## STAGE_2: Build Proxy
+## docker-compose -f ./docker-compose-armv7l.yml build proxy --check
+## docker-compose -f ./docker-compose.yml build proxy --check
 ## ######################################################################
 ARG DIST=alpine:edge
 FROM ${DIST}
 
+ARG ALPINE=${ALPINE}
 ARG EXPOSE="8118 9050"
 ARG PORT_EXPOSE_HTTP
 ARG PORT_EXPOSE_SOCKS
@@ -52,6 +55,11 @@ ENV PORT_EXPOSE_HTTP=${PORT_EXPOSE_HTTP} \
     CONFD_BACKEND=${CONFD_BACKEND} \
     CONFD_DEBUG=${CONFD_DEBUG}
 
+## ######################################################################
+## STAGE_2_1: Create Archive with Proxy Configs
+## tar cf proxy-configs.tar -C proxy/service tor privoxy runit-timer
+## tar cf proxy.tar -C proxy/service tor privoxy runit-timer
+## ######################################################################
 #ADD proxy/service/tor/torrc /etc/tor/torrc
 #ADD proxy/service/tor proxy/service/privoxy  /etc/service/
 ADD proxy.tar /etc/service/
@@ -65,10 +73,12 @@ RUN set -xe ;\
     _OS=$(uname -s | tr '[:upper:]' '[:lower:]') && _ARCH=$(uname -m | tr '[:upper:]' '[:lower:]' | sed 's/x86_64/amd64/g; s/armv7.*/armv7/g; s/aarch64/arm64/g' ) &&\
     #echo '@testing http://nl.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositories &&\
     #apk add --update privoxy tor@testing runit@testing openrc &&\
-    #echo -e 'https://dl-cdn.alpinelinux.org/alpine/v3.17/main\nhttps://dl-cdn.alpinelinux.org/alpine/v3.17/community' > /etc/apk/repositories &&\
-    echo -e 'http://dl-cdn.alpinelinux.org/alpine/edge/main\nhttp://dl-cdn.alpinelinux.org/alpine/edge/testing\nhttp://dl-cdn.alpinelinux.org/alpine/edge/community' > /etc/apk/repositories &&\
-    apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community tor runit &&\
-    apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main privoxy openrc &&\
+    #echo -e 'http://dl-cdn.alpinelinux.org/alpine/edge/main\nhttp://dl-cdn.alpinelinux.org/alpine/edge/testing\nhttp://dl-cdn.alpinelinux.org/alpine/edge/community' > /etc/apk/repositories &&\
+    echo "$VERSION_ID" | grep -q "3.17" || echo -e 'http://dl-cdn.alpinelinux.org/alpine/edge/main\nhttp://dl-cdn.alpinelinux.org/alpine/edge/testing\nhttp://dl-cdn.alpinelinux.org/alpine/edge/community' > /etc/apk/repositories &&\
+    echo "$VERSION_ID" | grep -q "3.17" || apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community tor runit &&\
+    echo "$VERSION_ID" | grep -q "3.17" || apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main privoxy openrc &&\
+    echo "$VERSION_ID" | grep -q "3.17" && apk add --repository=http://dl-cdn.alpinelinux.org/alpine/v3.17/community tor runit &&\
+    echo "$VERSION_ID" | grep -q "3.17" && apk add --repository=http://dl-cdn.alpinelinux.org/alpine/v3.17/main privoxy openrc &&\
     ##
     ## Additional packages
     apk add --update ca-certificates vim curl bash jq whois wget &&\
@@ -81,7 +91,7 @@ RUN set -xe ;\
     ## https://theagileadmin.com/2015/11/12/templating-config-files-in-docker-containers/
     #curl -sSLo /usr/bin/confd $(curl -sSL https://api.github.com/repos/kelseyhightower/confd/releases/latest | jq -r '.assets[]| select(.name | contains("linux-amd64")) | .browser_download_url') &&\
     chmod +x /usr/bin/confd &&\
-    mkdir -p /etc/confd/{conf.d,templates} &&\
+    mkdir -pv /etc/confd/conf.d /etc/confd/templates &&\
     ##
     ## Copy confd configs
     ##  - /etc/service/assets/root/ -> /etc
@@ -98,8 +108,8 @@ RUN set -xe ;\
     ##
     ## Tor script
     ##
-    chmod +x /etc/service/privoxy/run /etc/service/tor/run ||\
-    exit $?
+    chmod +x /etc/service/privoxy/run /etc/service/tor/run /etc/service/*/run || exit $? ;\
+    mkdir -pv /etc/service/haproxy && touch /etc/service/haproxy/down || exit $? ;
 
 #RUN chmod +x /etc/service/privoxy/run /etc/service/tor/run
 

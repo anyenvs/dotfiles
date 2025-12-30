@@ -1,0 +1,14 @@
+#!/bin/sh
+
+## Cleanup after service stops
+#PIDFILE="/var/run/haproxy/haproxy.pid"
+#echo "Haproxy service stopped with exit code: $1"
+#test -f "$PIDFILE" && rm -f $PIDFILE
+
+#kill -HUP $(cat supervise/pid)
+
+pkill haproxy
+
+echo "["$(date "+%F-%T.%Z")"] Haproxy Service stopped" ;
+
+exit 0

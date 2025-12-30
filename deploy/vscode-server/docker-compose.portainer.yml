@@ -3,7 +3,7 @@
 ## https://hub.docker.com/r/linuxserver/code-server
 ## https://github.com/linuxserver/docker-code-server/blob/master/Dockerfile.armhf
 ##
-version: '3.8'
+#version: '3.9'
 ## Main Image Name and Dockerfile
 x-dockerfile: &dockerfile
   #${MNT:-.}/Dockerfile.armhf
@@ -19,7 +19,7 @@ x-image: &image
 x-monorepoArgs: &monorepoArgs
   UID: 501
   GID: 1000
-  MNT: ${MNT}
+  MNT: ${MNT:-}
   DIST: *image
   #DIST: linuxserver/code-server:${DIST:-latest}
   ## https://github.com/coder/code-server/releases

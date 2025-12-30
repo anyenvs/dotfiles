@@ -7,5 +7,5 @@ mode  = "0644"
 keys = [
 "/port",
 ]
-#check_cmd = "/app/bin/check {{ .src }}"
-#reload_cmd = "service restart example"
+check_cmd = "privoxy --no-daemon --config-test {{ .src }}"
+reload_cmd = "sv reload privoxy"

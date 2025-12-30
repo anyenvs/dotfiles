@@ -7,6 +7,7 @@ export TERM=xterm
 export DISK1=/mnt/HD/HD_a2 DISK2=/mnt/HD/HD_b2
 export DATA_1=/mnt/HD/HD_a2/DATA_1
 export DATA_1_APPS=${DATA_1}/opt/repos/_dotfiles
+export DOTFILES=${DATA_1}/opt/repos/_dotfiles
 export DATA_1_ARMV7=${DATA_1_APPS}/linux-armv7 DATA_1_ARMV7_TOOLS=${DATA_1_APPS}/linux-armv7/armv7-android-tools
 export BASHRC=${DATA_1_APPS}/linux-armv7/_bashrc
 export PORTAINER_DATA=${DISK1}/Nas_Prog/docker/portainer
@@ -22,12 +23,15 @@ shopt -s progcomp     ##  will keep variable yet allow to path
 #--- ^[ represents Esc
 bind '"\e[A": history-search-backward'
 bind '"\e[B": history-search-forward'
+bind '"\e[C": forward-char'
+bind '"\e[D": backward-char'
 #bind '"\e[1;9D": backward-word'
 #bind '"\e[1;9C": forward-word'
 #bind '"\eOC":forward-word'
 #bind '"\eOD":backward-word'
 bind '"\e\e[D": backward-word'
 bind '"\e\e[C": forward-word'
+bind '"\ew": shell-kill-word'
 ##
 bind 'set show-all-if-ambiguous on'
 bind 'TAB:menu-complete'
@@ -57,6 +61,8 @@ _historygrep() { history | grep --color=auto -i --color "$@"; } ; alias hg='_his
 _pbcopyLinuxXSel() { xsel --clipboard --input 2>/dev/null || echo; } ; alias pbcopy=' _pbcopyLinuxXSel' ;
 _which() { local _cmd=$(which $1); [[ -z "$_cmd" ]] || ls --color=auto -l $_cmd; } ; alias wls='_which' ;
 alias g='git'
+alias g-debug='GIT_TRACE=1 GIT_CURL_VERBOSE=1 GIT_TRACE2=2 GIT_TRACE_PACKET=1 GIT_TRACE_PERFORMANCE=1 git'
+alias git-debug='g-debug'
 alias gs='git fetch --all;git status -uno; BRANCH=$(git rev-parse --abbrev-ref HEAD |tr -d "\n");echo -n $BRANCH |pbcopy;set +x'
 alias gd='git diff --no-ext-diff -w HEAD'
 
@@ -105,6 +111,13 @@ _anyenv-install() {
     test -f ~/.anyenvrc && . ~/.anyenvrc ;
     test -d ~/.anyenv && anyenv envs | xargs -n1 anyenv install --force --link ;
     set +x ;
+}
+
+_haproxy-check() {
+  haproxy -c -V -f /etc/haproxy/haproxy.cfg ; res=$? ;
+  test $res -eq 0 && echo "HAproxy config OK" || echo "HAproxy config ERROR" ;
+  test $res -eq 0 && sv reload haproxy ;
+  return $res
 }
 
 #export GIT_TRACE2=2 GIT_CURL_VERBOSE=1

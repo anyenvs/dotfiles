@@ -1,6 +1,22 @@
 #!/bin/sh
-# run confd to render out the config
+
+# forward stderr to stdout for use with runit svlogd
+exec 2>&1
+
+echo "["$(date "+%F-%T.%Z")"] Privoxy Service started" ;
+
+SV_PATH="/etc/service/privoxy"
+
+test -d "$SV_PATH/env" || mkdir -p "$SV_PATH/env"
+## Source environment if exists
+test -d "$SV_PATH/env" &&\
+    for i in $SV_PATH/env/*; do
+        test -f "$i" && . "$i"
+    done
+
+# Run confd to render out the config
 confd -onetime -backend env -log-level debug
 sleep 2
-# run privoxy
+
+# Run privoxy
 privoxy --no-daemon

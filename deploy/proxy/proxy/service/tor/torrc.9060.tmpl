@@ -1,0 +1,57 @@
+#https://www.torproject.org/docs/tor-manual.html.en#Log
+# to send logging messages.  Format is minSeverity[-maxSeverity] (stderr|stdout|syslog|file FILENAME).
+Log info stdout
+#"err": something bad just happened, and we can't recover. Tor will exit.
+#"warn": something bad happened, but we're still running. The bad thing might be a bug in the code, some other Tor process doing something unexpected, etc. The operator should examine the message and try to correct the problem.
+#"notice": something the operator will want to know about.
+#"info": something happened (maybe bad, maybe ok), but there's nothing you need to (or can) do about it.
+#"debug": for everything louder than info. It is quite loud indeed.
+#LogMessageDomains includes message domains with each log message
+LogMessageDomains 1
+
+SocksPolicy accept *
+
+#SocksListenAddress 0.0.0.0
+#SocksPort 0.0.0.0:9050
+#SocksPort 0.0.0.0:{{ getv "/port/expose/socks" }}
+SocksPort auto
+SocksPort 0.0.0.0:9060
+ControlPort 9061
+
+## Torified DNS
+#DNSPort 0.0.0.0:9053
+#DNSListenAddress 0.0.0.0
+#DNSPort 127.0.0.1:9053 IsolateClientAddr IsolateSOCKSAuth IsolateClientProtocol IsolateDestPort IsolateDestAddr
+DNSPort {{ getv "/port/expose/dns" }} IsolateClientAddr IsolateSOCKSAuth IsolateClientProtocol IsolateDestPort IsolateDestAddr
+AutomapHostsOnResolve 1
+AutomapHostsSuffixes .exit, .onion
+#ClientDNSRejectInternalAddresses 1
+ClientRejectInternalAddresses 1
+
+#https://bitcointalk.org/index.php?topic=331077.msg4292375#msg4292375
+#https://bitcointalk.org/index.php?topic=331077.msg3562794#msg3562794
+#option is set to 1, we pick a few long-term entry servers, and try to stick with them
+UseEntryGuards 1
+#Tor will under no circumstances run as a server or serve directory requests.
+ClientOnly 1
+LongLivedPorts 21, 22, 80, 443, 706, 1863, 5050, 5190, 5222, 5223, 6523, 6667, 6697, 8080, 8300, 9001, 9030
+
+# StrictNodes is set to 1, Tor will treat the ExcludeNodes option as a requirement to follow for all the circuits you generate, even if doing so will break functionality for you
+# StrictNodes 1 - Means TOR will use only this country exit nodes.
+StrictNodes 1
+#Country codes are case-insensitive. The code "{??}" refers to nodes whose country cant be identified
+{{- $ExcludeNodes := "Unnamed,default,{af},{dz},{ao},{am},{az},{bh},{by},{bj},{bn},{mm},{bf},{bi},{kh},{cm},{cf},{td},{cn},{co},{km},{cd},{ci},{cu},{dj},{eg},{gq},{er},{et},{ga},{gm},{ge},{gn},{hn},{hk},{id},{ir},{iq},{jo},{kw},{kg},{la},{ly},{mo},{mg},{my},{mr},{yt},{ma},{ng},{ne},{kp},{om},{pk},{ps},{qa},{rw},{sa},{sn},{sl},{sg},{so},{kr},{lk},{sd},{sz},{sy},{tw},{tj},{th},{tg},{tn},{tr},{tm},{ae},{uz},{ve},{vn},{ye},{zw},{ie},{je},{gg},{im},{ai},{bm},{aq},{io},{vg},{ky},{fk},{gi},{ms},{tc},{us},{mp},{pr},{vi},{as},{ht},{fm},{gu},{gl},{nf},{nz},{tk},{ck},{nu},{cy},{al},{ar},{bt},{bo},{cg},{ch},{ec},{fj},{gt},{gw},{il},{ke},{lb},{ls},{lr},{mk},{mw},{mv},{np},{ni},{py},{sc},{ug},{zm},{us},{??}" }}
+ExcludeNodes {{ if eq (getv "/tor/excludenodes" "") "" }}{{ $ExcludeNodes }}{{ else }}{{ getv "/tor/excludenodes" $ExcludeNodes }}{{ end }}
+{{- $ExcludeExitNodes := "{ag},{bb},{bz},{bw},{ch},{bg},{dm},{gh},{gd},{gy},{jm},{ki},{mu},{me},{na},{nr},{pg},{kn},{lc},{vc},{ws},{sb},{so},{sr},{tz},{to},{tt},{tv},{us},{??}" }}
+ExcludeExitNodes {{ if eq (getv "/tor/excludeexitnodes" "") "" }}{{ $ExcludeExitNodes }}{{ else }}{{ getv "/tor/excludeexitnodes" $ExcludeExitNodes }}{{ end }}
+#ExitNodes {ca},{gb},{jp},{fr},{de}
+#ExitNodes {ru},{fr}
+#EntryNodes AccessNow000,AccessNow001,AccessNow002,AccessNow003,AccessNow004,AccessNow005,AccessNow006,AccessNow007,AccessNow008,AccessNow009,AccessNow010,AccessNow011,AccessNow012,AccessNow013,AccessNow014,AccessNow015,AccessNow016,AccessNow017,AccessNow018,AccessNow019,spfTOR3,spfTOR1e1,spfTOR1e2,spfTOR1e3,spfTOR4e1,spfTOR4e2,spfTOR4e3,spfTOR5e1,spfTOR5e2,spfTOR5e3,orion,orilla,destiny,chulak,aurora,assk,assk2,sofia,amartysen,lumumba,ethanzuckerman,politkovskaja,politkovskaja2,edwardsnowden0,edwardsnowden1,edwardsnowden2,hessel0,hessel1,hessel2,ekumen,marcuse1,marcuse2,marylou1,marylou2,chaoscomputerclub27,chaoscomputerclub28,chaoscomputerclub29,chaoscomputerclub30,atticus,blanqui,thoreau,enjolras,luxemburg,bakunin,jaures,DFRI0,DFRI1,DFRI3,DFRI4,hviv103,hviv104,hviv105,wagtail,toreffiorg
+#ExitNodes {ua}
+{{- $ExitNodesDefault := "{ua}" }}
+ExitNodes {{ if eq (getv "/tor/exitnodes" "") "" }}{{ $ExitNodesDefault }}{{ else }}{{ getv "/tor/exitnodes" $ExitNodesDefault }}{{ end }}
+
+#https://wiki.archlinux.org/index.php/Tor#Tor_configuration
+#https://www.torproject.org/docs/tor-manual.html.en#_general_options
+#Tor Network Status
+#http://torstatus.blutmagie.de/index.php

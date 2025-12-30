@@ -1,0 +1,30 @@
+#!/bin/sh
+
+## Health check for haproxy Port
+HAPROXY_PORT={{ getv "/haproxy/port/expose/http" "5000" }}
+
+SV_PATH="/etc/service/haproxy"
+
+test -d "$SV_PATH/env" || mkdir -p "$SV_PATH/env"
+## Source environment if exists
+test -d "$SV_PATH/env" &&\
+    for i in $SV_PATH/env/*; do
+        test -f "$i" && . "$i"
+    done
+
+# run confd to render out the config
+confd -onetime -backend env -log-level debug
+sleep 2
+
+## Set up PID
+PID_PATH=/var/run/haproxy/haproxy.pid
+BIN_PATH=$( which haproxy )
+CFG_PATH=/etc/haproxy/haproxy.cfg
+
+test -d $( dirname $PID_PATH ) || mkdir -pv $( dirname $PID_PATH )
+
+## Check HAproxy
+haproxy -c -V -f $CFG_PATH
+timeout 5 nc -zv 127.0.0.1 $HAPROXY_PORT 2>/dev/null || exit 1
+
+exit 0

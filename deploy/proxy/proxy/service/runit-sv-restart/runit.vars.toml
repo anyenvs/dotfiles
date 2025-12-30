@@ -1,0 +1,14 @@
+[template]
+src   = "runit.vars.tmpl"
+dest  = "/etc/service/runit-sv-restart/runit.vars"
+#dest  = "/etc/tor/torrc"
+#owner = "app"
+#group = "app"
+mode  = "0644"
+keys = [
+"/port",
+"/tor",
+]
+#check_cmd = "/app/bin/check {{ .src }}"
+#reload_cmd = "service restart example"
+reload_cmd = "sv restart runit-sv-restart"

@@ -1,0 +1,13 @@
+.DS_Store
+*.pyc
+*.swp
+__pycache__
+.cache
+.pytest_cache
+.tox
+.eggs
+*.egg-info
+.idea/
+*.iml
+.vscode/
+.git*

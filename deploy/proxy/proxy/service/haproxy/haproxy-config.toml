@@ -1,0 +1,12 @@
+[template]
+src   = "haproxy-config.tmpl"
+dest  = "/etc/haproxy/haproxy.cfg"
+#owner = "app"
+#group = "app"
+mode  = "0644"
+keys = [
+"/port",
+"/haproxy",
+]
+check_cmd = "haproxy -c -V -dr -dG -f {{ .src }} || true"
+reload_cmd = "sv reload haproxy"

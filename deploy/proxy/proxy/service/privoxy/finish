@@ -1,0 +1,14 @@
+#!/bin/sh
+
+## Cleanup after service stops
+#PIDFILE="/var/run/privoxy/privoxy.pid"
+#echo "Privoxy service stopped with exit code: $1"
+#test -f "$PIDFILE" && rm -f $PIDFILE
+
+#kill -HUP $(cat supervise/pid)
+
+pkill privoxy
+
+echo "["$(date "+%F-%T.%Z")"] Privoxy Service stopped" ;
+
+exit 0

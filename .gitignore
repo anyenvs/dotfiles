@@ -27,6 +27,7 @@ package/
 nohup*
 .sops.yaml
 *automation-vault-secret.txt
+.git*
 .gitignore
 .gitconfig
 .gitattributes

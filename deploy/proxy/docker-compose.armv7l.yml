@@ -1,0 +1,446 @@
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+##
+## HOW TO BUILD AND RUN {Proxy Image} FROM COMPOSE:
+##  ** inspired by : https://github.com/dockage/confd/tree/master/alpine/3.11 **
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## STAGE_1 Create Archive with Proxy Configs
+##  ( cd ~/_dotfiles/deploy/proxy ; tar cf proxy-configs.tar --exclude='._*' -C proxy/service tor privoxy runit-sv-restart confd haproxy )
+##  ( cd ~/_dotfiles/deploy/proxy ; tar cf proxy.tar --exclude='._*' -C proxy/service tor privoxy runit-sv-restart confd haproxy )
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## STAGE_2 Build and Run Proxy Image ARM64 AND AMD64
+##  ( cd "$ICLOUD_PATH"/opt/proxy ; docker-compose build proxy )
+##  ( cd "$ICLOUD_PATH"/opt/proxy ; docker-compose up )
+##  ( cd "$ICLOUD_PATH"/opt/proxy ; docker-compose ps )
+##  ( cd /mnt/HD/HD_a2/DATA_1/_dotfiles/deploy/proxy ; docker-compose config --services )
+##  ( cd /mnt/HD/HD_a2/DATA_1/_dotfiles/deploy/proxy ; docker-compose config proxy )
+##  ( cd /mnt/HD/HD_a2/DATA_1/_dotfiles/deploy/proxy ; docker-compose build proxy confd )
+##  ( cd /mnt/HD/HD_a2/DATA_1/_dotfiles/deploy/proxy ; docker-compose up -d proxy confd )
+##  ( cd /mnt/HD/HD_a2/DATA_1/_dotfiles/deploy/proxy ; docker-compose down --remove-orphans )
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## STAGE_2 Build and Run Proxy Image ARMv7L
+##  ( cd /mnt/HD/HD_a2/DATA_1/_dotfiles/deploy/proxy ; docker-compose -f ./docker-compose.armv7l.yml config --services )
+##  ( cd /mnt/HD/HD_a2/DATA_1/_dotfiles/deploy/proxy ; docker-compose -f ./docker-compose.armv7l.yml config --services )
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## STAGE_3 CLEANUP Proxy
+##  ( cd /mnt/HD/HD_a2/DATA_1/_dotfiles/deploy/proxy ; docker-compose down --remove-orphans )
+##  ( cd /mnt/HD/HD_a2/DATA_1/_dotfiles/deploy/proxy ; docker-compose -f ./docker-compose.armv7l.yml down proxy --rmi local --remove-orphans )
+##  ( cd ~/_dotfiles/deploy/proxy ; docker-compose -f ./docker-compose.yml down proxy --rmi local --remove-orphans )
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## MAIN Image Name and Dockerfile
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+#version: '3.9'
+x-dockerfile: &dockerfile
+  #${MNT:-proxy}/Dockerfile
+  ${MNT:-proxy}/Dockerfile.armv7
+x-dockerfile-armv7: &dockerfile
+  ${MNT:-proxy}/Dockerfile.armv7
+x-image: &image
+  proxy:${DIST_TAG:-alpine-edge}
+  #icr.io/automation-saas-platform/mcsp-sre/proxy:${DIST_TAG:-alpine-edge}
+  #proxy:${DIST_TAG:-alpine-edge}
+  #proxy:${DIST_TAG:-debian-bullseye}
+## DEBUG BASE Image
+x-imageTools: &imageTools
+  proxy:alpine-tools
+x-dockerfileTools: &dockerfileTools
+  ${MNT:-proxy}/Dockerfile.tools
+#x-imageDebug: &imageDebug
+## CONFD
+x-imageConfd: &imageConfd
+  confd:latest
+x-dockerfileConfd: &dockerfileConfd
+  ${MNT:-.}/Dockerfile.confd-alpine
+  #${MNT:-confd}/Dockerfile.confd-alpine
+x-imagePihole: &imagePihole
+  pihole:latest
+x-dockerfilePihole: &dockerfilePihole
+  ${MNT:-.}/Dockerfile.pihole
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: Arguments
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+x-monorepoArgs: &monorepoArgs
+  MNT: ${MNT:-.}
+  #DIST: debian:bullseye-slim
+  #DIST: alpine:edge
+  ## ######################################################################
+  ## WDCLOUD armv7 works only with alpine:3.17
+  ## ######################################################################
+  #DIST: arm32v7/alpine:edge
+  DIST: alpine:3.17
+  EXPOSE: 8118 9050
+  PORT_EXPOSE_SOCKS: 9050
+  PORT_EXPOSE_HTTP: 8118
+  PORT_EXPOSE_DNS: 127.0.0.1:9053
+  ## COUNTRY_CODE='{fr},{pt' docker-compose build proxy
+  ## https://sccmrookie.blogspot.com/2016/03/tor-country-codes-list.html
+  TOR_EXITNODES: ${COUNTRY_CODE:-{ua}}
+  #TOR_EXITNODES: "{ru},{fr}"
+  #TOR_EXITNODES: "{ca},{gb},{jp},{fr},{de}"
+  #TOR_EXITNODES: "{mz},{mc}"
+  CONFD_DEBUG: Y29uZmQgLW9uZXRpbWUgLWJhY2tlbmQgZW52IC1sb2ctbGV2ZWwgZGVidWcK
+  CONFD_BACKEND: env
+  CONFD_LOG_LEVEL: info
+x-dns: &dns
+  #- 172.100.0.10
+  - 127.0.0.11
+  - 192.168.1.1
+  - 8.8.8.8
+  - 4.4.4.4
+x-dnsPihole: &dnsPihole
+  - 172.100.0.10
+x-security-opts: &security-opts
+  privileged: true
+  cap_add:
+    - SYS_ADMIN
+    - SYS_TIME
+  #security_opt:
+  #  - seccomp:unconfined
+  #  - label:disable
+  tmpfs:
+    - /run
+    - /run/lock
+x-build: &Build
+  context:    ./
+  dockerfile: *dockerfile
+  ## failed to solve: granting entitlement security.insecure is not allowed by build daemon configuration
+  #privileged: true
+  #cap_add: [ NET_RAW ]
+  #cap_add: [ SYS_ADMIN, SYS_TIME ]
+  ## failed to solve: granting entitlement network.host is not allowed by build daemon configuration
+  #network: host
+  args:
+    *monorepoArgs
+  #platforms:     [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
+  #platforms:    [ "linux/arm64","linux/arm/v7" ]
+x-healthcheckProxy: &healthcheckProxy
+  test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8118/health || exit 1"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+x-deploy: &deploy
+  replicas: 2
+  update_config:
+    parallelism: 2
+    delay: 10s
+    order: start-first
+  #restart_policy:
+  #  condition: "Always"
+  restart_policy:
+    condition: on-failure
+    delay: 5s
+    #max_attempts: 999
+  resources:
+    limits:
+      cpus: '0.5'
+      memory: 512M
+    reservations:
+      cpus: '0.2'
+      memory: 128M
+
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: NETWORKS
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+networks:
+  net:
+    #driver: bridge
+    ## For overlay networks in swarm mode:
+    #driver: overlay
+    #attachable: true
+    # driver_opts:  # Optional
+    #   encrypted: "true"  # Encrypt network traffic
+    #   com.docker.network.driver.mtu: "1450"
+    #labels:
+    #  - "network.scope=swarm"
+    #  - "network.purpose=proxy"
+    ipam:
+      config:
+        - subnet: 172.100.0.0/24
+        #- subnet: 10.10.0.0/16
+        #  ip_range: 10.10.10.0/24
+        #  gateway: 10.10.10.1
+
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: VOLUMES
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+volumes:
+  proxy_data:
+    external: true
+    name: proxy_data
+x-monorepoVolumes: &monorepoVolumes
+  #- ..:/opt/repos
+  #- .config/docker-config.json:/root/.docker/docker-config.json
+  #- .config/kube-config.yml:/root/.kube/config
+  #### local config mappings
+  #- .config/.bash_history:/root/.bash_history
+  #- ${MNT}${HOME}/work/repos:/opt/repos
+  #- /opt/repos:/opt/repos
+  #- ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/docker-config.json:/root/.docker/docker-config.json
+  #- ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/kube-config.yml:/root/.kube/config
+  #- ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/gitconfig:/root/.gitconfig
+  #- ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/gnupg:/root/.gnupg
+  #- ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/.bash_history:/root/.bash_history
+  - /mnt/HD/HD_a2/DATA_1/opt/repos:/opt/repos
+  #- /mnt/HD/HD_a2/DATA_1/opt/repos/_vscode-server/config:/config
+  - proxy_data:/config/proxy_data
+
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+##  MARK: SERVICES  ##
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+services:
+  ## --------------------------------------------------------------------------------------------------------------------------------------------
+  ##  MARK: PROXY SERVICE  ##
+  ## --------------------------------------------------------------------------------------------------------------------------------------------
+  proxy:
+    ## Host mode uses host network directly, ports ignored
+    #network_mode:   host
+    ## Swamp mode overlay network when 2 replicas
+    networks:
+      - net
+    hostname:       proxy
+    ## cant set container_name and proxy as container name must be unique: invalid compose project
+    #container_name: proxy
+    image:          *image
+    ports:
+      ### Maps host 8118→rep1, 8119→rep2 → container 8118
+      - 9050-9051:9050
+      - 8118-8119:8118
+      - 8088-8089:8088
+      #- target: 9050
+      #  published: 9050
+      #  protocol: tcp
+      #- target: 9050
+      #  published: 9051
+      #  protocol: tcp
+      #- target: 8118
+      #  published: 8118
+      #  protocol: tcp
+      #- target: 8118
+      #  published: 8119
+      #  protocol: tcp
+      #- target: 8088
+      #  published: 8088
+      #  protocol: tcp
+      #- target: 8088
+      #  published: 8089
+      #  protocol: tcp
+    #platform:       linux/arm/v7
+    #platform:       linux/amd64
+    #platform:       linux/arm64
+    #platform:       linux/arm/v7,linux/amd64,linux/arm64
+    build:
+      <<: *Build
+      #platforms:    [ "linux/amd64","linux/arm64","linux/arm/v7" ]
+      #platforms:    [ "linux/arm64","linux/arm/v7" ]
+      #platforms:
+      #  - linux/amd64
+      #  - linux/arm64
+      #  # - linux/arm/v7
+      #  - linux/arm64/v8
+      #  # - linux/armv7 ## no match for platform in manifest: not found
+      #  # - linux/ppc64le
+      #  # - linux/s390x
+    deploy:
+      <<: *deploy
+    # To avoid issue with named volume and mounting time
+    <<: *security-opts
+    #cap_add: [ SYS_ADMIN, SYS_TIME ]
+    dns: *dns
+    restart: always
+    env_file: stack.env
+    environment:
+      ## https://docs.docker.com/compose/environment-variables/env-file/
+      ## https://docs.docker.com/compose/environment-variables/env-file/
+      HOME_USER: ${HOME}
+      #ENABLE_IPV6: true
+      TZ: America/New_York
+      #RUNIT_SV_MAIN:        ${RUNIT_SV_MAIN-}
+      #RUNIT_SV_RESTART:     ${RUNIT_SV_RESTART-tor}
+      #RUNIT_TIMER_CONFD:    ${RUNIT_TIMER_CONFD-}
+      #RUNIT_TIMER_PROXY:    ${RUNIT_TIMER_PROXY-}
+      #RUNIT_TIMER_RESTART:  ${RUNIT_TIMER_RESTART-}
+      #PORT_EXPOSE_SOCKS:    ${PORT_EXPOSE_SOCKS-}
+      #PORT_EXPOSE_HTTP:     ${PORT_EXPOSE_HTTP-}
+      #PORT_EXPOSE_DNS:      ${PORT_EXPOSE_DNS-}
+      #TOR_EXCLUDENODES:     ${TOR_EXCLUDENODES-}
+      #TOR_EXCLUDEEXITNODES: ${TOR_EXCLUDEEXITNODES-}
+      ## COUNTRY_CODE={ua} docker-compose config proxy
+      ## COUNTRY_CODE={fr},{pt docker-compose config proxy
+      TOR_EXITNODES:        ${COUNTRY_CODE-{ua}}
+      #TOR_EXITNODES:       "{au}"
+      #TOR_EXITNODES:       "{ua}"
+      #TOR_EXITNODES:       "{ee}" ## ESTONIA
+      #TOR_EXITNODES:       "{lv}" ## LATVIA
+      #TOR_EXITNODES:       "{fi}" ## FINLAND
+      #TOR_EXITNODES:       "{kz}" ## KZ
+      ## https://metrics.torproject.org/rs.html#search/country:ru
+      #TOR_EXITNODES:       "91.92.109.43"
+      #TOR_EXITNODES:       "{ru}"
+      #TOR_EXITNODES:       "{by}" ## BELARUS
+      #TOR_EXITNODES:       "{ro}" ## ROMANIA:{ro}
+      #TOR_EXITNODES:       "{bd}"
+      #TOR_EXITNODES:       "{in}"
+      #TOR_EXITNODES:       "{ru},{fr}"
+      #TOR_EXITNODES:       "{jp},{de}"
+      #TOR_EXITNODES:       "{ca},{gb}"
+      #TOR_EXITNODES:       "{cc}" ## COCOS ISLAND
+    #user:         foo
+    #user:         "${UID}:${GID}"
+    #command:      echo $USER
+    #entrypoint:   sleep infinity
+    #entrypoint:   sleep 9999d
+    entrypoint:   runsvdir /etc/service
+    volumes: *monorepoVolumes
+
+  ## ###################################################################### ##
+  ##  MARK: PROXY TOOLS
+  ## ###################################################################### ##
+  #tools:
+  #  network_mode:   host
+  #  hostname:       proxy-tools
+  #  container_name: proxy-tools
+  #  image:          *imageTools
+  #  # To avoid issue with named volume and mounting time
+  #  <<: *security-opts
+  #  #cap_add: [ SYS_ADMIN, SYS_TIME ]
+  #  ## ###################################################################### ##
+  #  ## NOTE: sops is not available for armv7
+  #  ##   https://github.com/getsops/sops/releases
+  #  ## Alertnative:
+  #  ##   https://pkgs.alpinelinux.org/package/edge/community/armv7/sops
+  #  ## ###################################################################### ##
+  #  #platform:      linux/arm/v7
+  #  #platform:      linux/arm64
+  #  platform:       linux/amd64
+  #  build:
+  #    context:    ./
+  #    dockerfile: *dockerfileTools
+  #    ## failed to solve: granting entitlement security.insecure is not allowed by build daemon configuration
+  #    #privileged: true
+  #    ## failed to solve: granting entitlement network.host is not allowed by build daemon configuration
+  #    #network: host
+  #    args:
+  #      *monorepoArgs
+  #    #platforms:    [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
+  #    #platforms:
+  #    #  - linux/amd64
+  #    #  - linux/arm64
+  #    #  - linux/arm/v7
+  #    #  # - linux/arm64/v8
+  #    #  # - linux/armv7 ## no match for platform in manifest: not found
+  #    #  # - linux/ppc64le
+  #    #  # - linux/s390x
+  #  dns: *dns
+  #  environment:
+  #    ## https://docs.docker.com/compose/environment-variables/env-file/
+  #    ## https://docs.docker.com/compose/environment-variables/env-file/
+  #    HOME_USER: ${HOME}
+  #    #ENABLE_IPV6: true
+  #    TZ: America/New_York
+  #    ## COUNTRY_CODE={ua} docker-compose config proxy
+  #    ## COUNTRY_CODE={fr},{pt docker-compose config proxy
+  #    TOR_EXITNODES: ${COUNTRY_CODE-{ua}}
+
+  ## ###################################################################### ##
+  ##  MARK: CONFD
+  ## ###################################################################### ##
+  confd:
+    #network_mode:   host
+    networks:
+      - net
+      #net:
+        ## Assign the static IP
+        #ipv4_address: 172.100.0.100
+    hostname:       confd
+    container_name: confd
+    image:          *imageConfd
+    # To avoid issue with named volume and mounting time
+    <<: *security-opts
+    #cap_add: [ SYS_ADMIN, SYS_TIME ]
+    ## Keep platform for confd disabled to avoid build issues
+    #platform:      linux/arm/v7
+    #platform:      linux/arm64
+    #platform:      linux/arm64
+    build:
+      context:    ../confd
+      dockerfile: *dockerfileConfd
+      ## failed to solve: granting entitlement security.insecure is not allowed by build daemon configuration
+      #privileged: true
+      ## failed to solve: granting entitlement network.host is not allowed by build daemon configuration
+      #network: host
+      args:
+        <<: *monorepoArgs
+        ENTRYPOINT: /app/entrypoint.sh
+        MNT: ./
+      #platforms:     [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
+      #platforms:    [ "linux/arm64","linux/arm/v7" ]
+      #platforms:
+      #  - linux/amd64
+      #  - linux/arm64
+      #  - linux/arm/v7
+      #  # - linux/arm64/v8
+      #  # - linux/armv7 ## no match for platform in manifest: not found
+      #  # - linux/ppc64le
+      #  # - linux/s390x
+    dns: *dns
+    #dns: *dnsPihole
+    environment:
+      ## https://docs.docker.com/compose/environment-variables/env-file/
+      ## https://docs.docker.com/compose/environment-variables/env-file/
+      HOME_USER: ${HOME}
+      #ENABLE_IPV6: true
+      TZ: America/New_York
+      ## COUNTRY_CODE={ua} docker-compose config proxy
+      ## COUNTRY_CODE={fr},{pt docker-compose config proxy
+      TOR_EXITNODES:        ${COUNTRY_CODE-{ua}}
+      RUNIT_SV_MAIN:        ${RUNIT_SV_MAIN-}
+      RUNIT_SV_RESTART:     ${RUNIT_SV_RESTART-tor}
+      RUNIT_TIMER_CONFD:    ${RUNIT_TIMER_CONFD-}
+      RUNIT_TIMER_RESTART:  ${RUNIT_TIMER_RESTART-}
+      RUNIT_TIMER_PROXY:    ${RUNIT_TIMER_PROXY-}
+      ENTRYPOINT:           ${ENTRYPOINT-/app/entrypoint.sh}
+  ## --------------------------------------------------------------------------------------------------------------------------------------------
+  ##  MARK: PIHOLE SERVICE  ##
+  ## --------------------------------------------------------------------------------------------------------------------------------------------
+  #pihole:
+  #  #network_mode:   host
+  #  networks:
+  #    net:
+  #      ## Assign the static IP
+  #      ipv4_address: 172.100.0.10
+  #  hostname:       pihole
+  #  container_name: pihole
+  #  image:          *imagePihole
+  #  #image:          pihole/pihole:latest
+  #  <<: *security-opts
+  #  build:
+  #    context:    ../pihole
+  #    dockerfile: *dockerfilePihole
+  #    args:
+  #      <<: *monorepoArgs
+  #      #DIST: pihole/pihole:latest
+  #      DIST: alpine:3.22
+  #      ENTRYPOINT: start.sh
+  #      MNT: ./
+  #  dns: *dns
+  #  ports:
+  #    - 53:53/tcp
+  #    - 53:53/udp
+  #    - 80:80/tcp
+  #  environment:
+  #    TZ: "America/New_York"
+  #    WEBPASSWORD: "changeme_tbd"
+  #    DNSMASQ_LISTENING: "all"
+  #    ENTRYPOINT:           ${ENTRYPOINT-start.sh}
+  #    # Optional: Add static local DNS entries
+  #    #FTLCONF_dns_hosts: |
+  #    #  172.100.0.2 haproxy.local
+  #    #  172.100.0.20 proxy-1.local
+  #    #  172.100.0.21 proxy-2.local
+  #    FTLCONF_LOCAL_IPV4: "172.100.0.10"
+  #  volumes:
+  #    - ./etc-pihole:/etc/pihole
+  #    - ./etc-dnsmasq.d:/etc/dnsmasq.d
+  #  restart: unless-stopped

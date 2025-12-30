@@ -1,0 +1,12 @@
+[template]
+src   = "haproxy-check.tmpl"
+dest  = "/etc/service/haproxy/check"
+#owner = "app"
+#group = "app"
+mode  = "0755"
+keys = [
+"/port",
+]
+#check_cmd = "/app/bin/check {{ .src }}"
+#reload_cmd = "service restart example"
+#reload_cmd = "sv restart haproxy"

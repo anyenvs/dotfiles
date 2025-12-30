@@ -3,7 +3,7 @@
 ## https://hub.docker.com/r/linuxserver/code-server
 ## https://github.com/linuxserver/docker-code-server/blob/master/Dockerfile.armhf
 ##
-version: '3.8'
+#version: '3.8'
 ## Main Image Name and Dockerfile
 x-dockerfile: &dockerfile
   #${MNT:-.}/Dockerfile.armhf
@@ -17,7 +17,7 @@ x-image: &image
 #x-imageDebug: &imageDebug
 ## Arguments
 x-monorepoArgs: &monorepoArgs
-  MNT: ${MNT}
+  MNT: ${MNT:-}
   DIST: gitpod/openvscode-server:${DIST:-latest}
   #DIST: linuxserver/code-server:${DIST:-latest}
   ## https://github.com/coder/code-server/releases

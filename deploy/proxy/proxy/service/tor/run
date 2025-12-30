@@ -1,6 +1,29 @@
-#!/bin/sh
+#!/bin/bash
+
+# forward stderr to stdout for use with runit svlogd
+exec 2>&1
+
+echo "["$(date "+%F-%T.%Z")"] Tor Service started" ;
+
+SV_PATH="/etc/service/tor"
+
+test -d "$SV_PATH/env" || mkdir -p "$SV_PATH/env"
+## Source environment if exists
+test -d "$SV_PATH/env" &&\
+    for i in $SV_PATH/env/*; do
+        test -f "$i" && . "$i"
+    done
+
 # run confd to render out the config
 confd -onetime -backend env -log-level debug
 sleep 2
+
+## Set up PID
+PID_PATH="/var/run/tor/tor.pid"
+TORRC="/etc/tor/torrc"
+
+test -d $( dirname $PID_PATH ) || mkdir -pv $( dirname $PID_PATH )
+
 # run tor proxy
-tor
+#tor --RunAsDaemon 0 --PidFile /var/run/tor/tor.pid --DataDirectory /var/lib/tor --SocksPort 9050 --ControlPort 9051 --Log "notice stdout"
+tor ${TORRC:+-f $TORRC} --PidFile "$PIDFILE"

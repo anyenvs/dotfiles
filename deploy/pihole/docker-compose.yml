@@ -1,0 +1,172 @@
+## attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion
+#version: '3.8'
+## ------------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: PIHOLE Repo
+## https://github.com/pi-hole/pi-hole
+## https://github.com/pi-hole/docker-pi-hole/tree/master/src
+## ------------------------------------------------------------------------------------------------------------------------------------------------
+## Main Image Name and Dockerfile
+## ------------------------------------------------------------------------------------------------------------------------------------------------
+x-dockerfile: &dockerfile
+  ${DOCKERFILE-Dockerfile}
+  #Dockerfile.pihole
+  #Dockerfile.pihole-custom
+  #deploy/docker/Dockerfile.ubi
+  #Dockerfile-awscli.ubi
+  #deploy/docker/Dockerfile
+x-image: &image
+  pihole:latest
+x-imageICR: &imageICR
+  icr.io/automation-saas-platform/mcsp-sre/pihole:${TAG:-latest}
+x-appArgs: &appArgs
+  #DIST: debian:bullseye-slim
+  DIST: alpine:edge
+  PORT_EXPOSE: 8000
+  APP_NAME: pihole
+  ENTRYPOINT: ${ENTRYPOINT-start.sh}
+  SOPS_VERSION: 3.10.1
+  RUNIT_TIMER_CONFD: 300
+x-dns: &dns
+  - 127.0.0.1
+  - 192.168.1.1
+  - 1.1.1.1
+  - 8.8.8.8
+  - 4.4.4.4
+x-dnsPihole: &dnsPihole
+  - 172.100.0.10
+x-security-opts: &security-opts
+  privileged: true
+  cap_add:
+    - SYS_ADMIN
+    - SYS_TIME
+  #security_opt:
+  #  - seccomp:unconfined
+  #  - label:disable
+  tmpfs:
+    - /run
+    - /run/lock
+x-healthcheckProxy: &healthcheckProxy
+  #test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8118/health || exit 1"]
+  #test: ["CMD", "dig", "-p", "$(pihole-FTL --config dns.port)", "+short", "+norecurse", "+retry=0", "@127.0.0.1", "pi.hole", "|| exit 1" ]
+  test: ["CMD", "/bin/echo", "ok || exit 1"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: DEPLOY
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+x-deploy: &deploy
+  replicas: 1
+  update_config:
+    parallelism: 2
+    delay: 10s
+    order: start-first
+  #restart_policy:
+  #  condition: "Always"
+  restart_policy:
+    condition: on-failure
+    delay: 5s
+    #max_attempts: 999
+  resources:
+    limits:
+      cpus: '0.5'
+      memory: 512M
+    reservations:
+      cpus: '0.2'
+      memory: 128M
+x-build: &Build
+  context:    ./
+  dockerfile: *dockerfile
+  ## failed to solve: granting entitlement security.insecure is not allowed by build daemon configuration
+  #privileged: true
+  #cap_add: [ NET_RAW ]
+  #cap_add: [ SYS_ADMIN, SYS_TIME ]
+  ## failed to solve: granting entitlement network.host is not allowed by build daemon configuration
+  #network: host
+  args:
+    *appArgs
+  #platforms:     [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
+  #platforms:    [ "linux/arm64","linux/arm/v7" ]
+
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: NETWORKS
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+networks:
+  proxy_net:
+    external: true
+  dns:
+    #driver: bridge
+    ## For overlay networks in swarm mode:
+    #driver: overlay
+    #attachable: true
+    # driver_opts:  # Optional
+    #   encrypted: "true"  # Encrypt network traffic
+    #   com.docker.network.driver.mtu: "1450"
+    #labels:
+    #  - "network.scope=swarm"
+    #  - "network.purpose=proxy"
+    ipam:
+      config:
+        - subnet: 172.50.0.0/24
+        #- subnet: 10.10.0.0/16
+        #  ip_range: 10.10.10.0/24
+        #  gateway: 10.10.10.1
+
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: VOLUMES
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+volumes:
+  proxy_data:
+    external: true
+    name: proxy_data
+x-appVolumes: &appVolumes
+  #- .:./
+  - proxy_data:/config/pihole_data
+
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+##  MARK: SERVICES  ##
+## https://github.com/pi-hole/pi-hole
+## https://github.com/pi-hole/docker-pi-hole/tree/master/src
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+services:
+  ##
+  ## Go pihole
+  ##
+  pihole:
+    #network_mode: host
+    networks:
+      proxy_net:
+        ### Assign the static IP
+        ipv4_address: 172.100.0.11
+      dns:
+        ### Assign the static IP
+        ipv4_address: 172.50.0.11
+    hostname:     ${APP_NAME:-pihole}
+    image:        *image
+    ## Keep platform disabled to avoid build issues
+    #platform:       linux/arm/v7
+    #platform:       linux/arm64
+    #platform:       linux/amd64
+    build:
+      context:    ${MNT-./}
+      dockerfile: *dockerfile
+      args:
+        *appArgs
+      #platforms:
+        #- linux/arm/v7
+        #- linux/arm64
+        #- linux/amd64
+    restart: always
+    deploy:
+      <<: *deploy
+    # To avoid issue with named volume and mounting time
+    <<: *security-opts
+    #cap_add: [ SYS_ADMIN, SYS_TIME ]
+    dns: *dns
+    environment:
+      - HOME=/root
+    #entrypoint: sh -c '/app/entrypoint.sh'
+    #entrypoint: runsvdir /etc/service
+    entrypoint: ${ENTRYPOINT-start.sh}
+    volumes: *appVolumes

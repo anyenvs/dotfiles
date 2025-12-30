@@ -1,0 +1,14 @@
+#!/bin/sh
+
+## Cleanup after service stops
+#PIDFILE="/var/run/tor/tor.pid"
+#echo "Tor service stopped with exit code: $1"
+#test -f "$PIDFILE" && rm -f $PIDFILE
+
+#kill -HUP $(cat supervise/pid)
+
+pkill tor
+
+echo "["$(date "+%F-%T.%Z")"] Tor Service stopped" ;
+
+exit 0

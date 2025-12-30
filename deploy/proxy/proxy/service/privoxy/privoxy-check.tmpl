@@ -1,0 +1,18 @@
+#!/bin/sh
+
+## Health check for Privoxy Port
+PRIVOXY_PORT={{ getv "/port/expose/http" "8118" }}
+
+SV_PATH="/etc/service/privoxy"
+
+## Source environment if exists
+test -d "$SV_PATH/env" &&\
+    for i in $SV_PATH/env/*; do
+        test -f "$i" && . "$i"
+    done
+
+## Check Privoxy
+privoxy --no-daemon --config-test
+timeout 5 nc -zv 127.0.0.1 $PRIVOXY_PORT 2>/dev/null || exit 1
+
+exit 0

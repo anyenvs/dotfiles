@@ -1,0 +1,12 @@
+[template]
+src   = "tor-check.tmpl"
+dest  = "/etc/service/tor/check"
+#owner = "app"
+#group = "app"
+mode  = "0755"
+keys = [
+"/port",
+]
+#check_cmd = "./check {{ .src }}"
+#reload_cmd = "service restart example"
+reload_cmd = "sv restart tor"

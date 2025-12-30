@@ -1,0 +1,116 @@
+##
+##   HAProxy Config
+##   https://www.haproxy.com/documentation/haproxy-enterprise/administration/logs/#log-to-json
+##
+##
+
+global
+  log stdout format raw local0
+  maxconn 4096
+  #user haproxy
+  #group haproxy
+  ## Default SSL material locations
+  #ca-base /etc/ssl/certs
+  #crt-base /etc/ssl/private
+  ## Default ciphers to use on SSL-enabled listening sockets.
+  ## For more information, see ciphers(1SSL). This list is from:
+  ##  https://hynek.me/articles/hardening-your-web-servers-ssl-ciphers/
+  #ssl-default-bind-ciphers ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5:!DSS
+  #ssl-default-bind-options no-sslv3
+
+defaults
+  balance roundrobin
+  log global
+  default-server init-addr last,libc,none
+  timeout connect 5000
+  timeout client  50000
+  timeout server  50000
+  timeout queue   5s
+  #mode http
+  #option httplog
+  ## https://www.haproxy.com/documentation/haproxy-enterprise/administration/logs/#tcp-log-format
+  mode tcp
+  option tcplog
+  retries 999
+
+## https://www.haproxy.com/documentation/haproxy-configuration-tutorials/proxying-essentials/dns-resolution/
+resolvers docker_resolver
+  # The Docker internal DNS server IP
+  nameserver dns_docker 127.0.0.11:53
+  #nameserver pihole_dns pihole:53
+  # How long to cache a successful resolution
+  hold valid 10s
+  # How often to check for updates if a server is down or the response is invalid
+  timeout retry 5s
+
+listen stats
+  mode http
+  bind 0.0.0.0:2090
+  stats enable
+  stats uri /stats
+  stats realm Haproxy\ Statistics
+  stats auth admin:bdi2016
+
+listen PRIVOXY-in
+  mode tcp ##http
+  bind 0.0.0.0:9100
+  default_backend privoxy_http
+  balance roundrobin
+
+listen TOR-in
+  mode tcp ##http
+  bind 0.0.0.0:9101
+  default_backend tor_socks
+  balance roundrobin
+
+###-Redirect http requests to https-######
+#frontend http_to_https_redirect
+#bind *:80
+#mode http
+#redirect scheme https if !{ ssl_fc }
+
+frontend forward_proxy
+  # Receive HTTP traffic
+  bind *:{{ getv "/haproxy/port/expose/http" "8088" }}
+  #bind *:3128
+  mode tcp ##http
+  use_backend stats if { path -i /stats }
+  #use_backend foo_servers if { req.hdr(host) -i foo.com }
+  default_backend privoxy_http
+
+backend privoxy_http
+  balance roundrobin
+  mode tcp ##http
+  #server tor tor:{{ getv "/port/expose/http" "8118" }}
+  server privoxy_8118 127.0.0.1:{{ getv "/port/expose/http" "8118" }} check init-addr last,libc,none
+  server proxy-proxy-1:8118 proxy-proxy-1:8118 check init-addr last,libc,none
+  server proxy-proxy-2:8118 proxy-proxy-2:8118 check init-addr last,libc,none
+  server proxy-proxy-1:8119 proxy-proxy-1:8119 check init-addr last,libc,none
+  server proxy-proxy-2:8119 proxy-proxy-2:8119 check init-addr last,libc,none
+
+
+backend tor_socks
+  balance roundrobin
+  mode tcp
+  server tor_9050 127.0.0.1:{{ getv "/port/expose/socks" "9050" }} check init-addr last,libc,none
+  server proxy-proxy-1:9050 proxy-proxy-1:9050 check resolvers docker_resolver init-addr last,libc,none
+  server proxy-proxy-2:9050 proxy-proxy-2:9050 check resolvers docker_resolver init-addr last,libc,none
+  server proxy-proxy-1:9051 proxy-proxy-1:9051 check resolvers docker_resolver init-addr last,libc,none
+  server proxy-proxy-2:9051 proxy-proxy-2:9051 check resolvers docker_resolver init-addr last,libc,none
+  #server 127.0.0.1:9052 127.0.0.1:9052 check resolvers docker_resolver init-addr none
+  #server 127.0.0.1:9053 127.0.0.1:9053 check resolvers docker_resolver init-addr none
+  #server 127.0.0.1:9054 127.0.0.1:9054 check resolvers docker_resolver init-addr none
+  #server 127.0.0.1:9055 127.0.0.1:9055 check resolvers docker_resolver init-addr none
+  #server 127.0.0.1:9056 127.0.0.1:9056 check resolvers docker_resolver init-addr none
+  #server 127.0.0.1:9057 127.0.0.1:9057 check resolvers docker_resolver init-addr none
+  #server 127.0.0.1:9058 127.0.0.1:9058 check resolvers docker_resolver init-addr none
+  #server 127.0.0.1:9059 127.0.0.1:9059 check resolvers docker_resolver init-addr none
+  #server 127.0.0.1:9060 127.0.0.1:9060 check resolvers docker_resolver init-addr none
+
+backend stats_backend
+  mode  http
+  stats enable
+  stats uri /stats
+  stats refresh 15s
+  stats show-legends
+  stats show-node

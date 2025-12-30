@@ -1,0 +1,10 @@
+#!/bin/sh
+
+## Health check Tor
+TOR_PORT={{ getv "/port/expose/socks" "9050" }}
+
+# Check Tor
+tor --version
+timeout 5 nc -zv 127.0.0.1 $TOR_PORT 2>/dev/null || exit 1
+
+exit 0

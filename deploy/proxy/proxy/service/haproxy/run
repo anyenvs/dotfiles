@@ -1,0 +1,41 @@
+#!/bin/sh
+#
+# runit haproxy
+#
+
+# forward stderr to stdout for use with runit svlogd
+exec 2>&1
+
+echo "["$(date "+%F-%T.%Z")"] HAproxy Service started" ;
+
+SV_PATH="/etc/service/haproxy"
+
+test -d "$SV_PATH/env" || mkdir -p "$SV_PATH/env"
+## Source environment if exists
+test -d "$SV_PATH/env" &&\
+    for i in $SV_PATH/env/*; do
+        test -f "$i" && . "$i"
+    done
+
+# run confd to render out the config
+confd -onetime -backend env -log-level debug
+sleep 2
+
+PID_PATH=/var/run/haproxy/haproxy.pid
+BIN_PATH=$( which haproxy )
+CFG_PATH=/etc/haproxy/haproxy.cfg
+
+test -d $( dirname $PID_PATH ) || mkdir -pv $( dirname $PID_PATH )
+
+exec $BIN_PATH -dr -dG -f $CFG_PATH -d -p $PID_PATH
+
+#exec /bin/bash <<EOF
+#$BIN_PATH -f $CFG_PATH -D -p $PID_PATH
+#
+#trap "echo SIGHUP caught; $BIN_PATH -f $CFG_PATH -D -p $PID_PATH -sf \\\$(cat $PID_PATH)" SIGHUP
+#trap "echo SIGTERM caught; kill -TERM \\\$(cat $PID_PATH) && exit 0" SIGTERM SIGINT
+#
+#while true; do # Iterate to keep job running.
+#  sleep 1 # Wake up to handle signals
+#done
+#EOF
