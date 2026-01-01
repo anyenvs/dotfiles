@@ -68,7 +68,7 @@ x-monorepoArgs: &monorepoArgs
   ## WDCLOUD armv7 works only with alpine:3.17
   ## ######################################################################
   #DIST: arm32v7/alpine:edge
-  DIST: alpine:3.17
+  DIST: alpine:3.17  ## this only works on armv7l
   EXPOSE: 8118 9050
   PORT_EXPOSE_SOCKS: 9050
   PORT_EXPOSE_HTTP: 8118
@@ -83,9 +83,10 @@ x-monorepoArgs: &monorepoArgs
   CONFD_BACKEND: env
   CONFD_LOG_LEVEL: info
 x-dns: &dns
-  #- 172.100.0.10
+  #- 172.100.0.11
   - 127.0.0.11
   - 192.168.1.1
+  - 1.1.1.1
   - 8.8.8.8
   - 4.4.4.4
 x-dnsPihole: &dnsPihole
@@ -98,9 +99,38 @@ x-security-opts: &security-opts
   #security_opt:
   #  - seccomp:unconfined
   #  - label:disable
+  ## https://github.com/just-containers/s6-overlay/issues/397#issuecomment-1030856278
   tmpfs:
-    - /run
+    - /run:exec
     - /run/lock
+x-healthcheckProxy: &healthcheckProxy
+  test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8118/health || exit 1"]
+  #test: ["CMD", "/bin/echo", "ok || exit 1"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: DEPLOY
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+x-deploy: &deploy
+  replicas: 2
+  update_config:
+    parallelism: 2
+    delay: 10s
+    order: start-first
+  restart_policy:
+    condition: always
+    #condition: on-failure
+    #max_attempts: 999
+    delay: 5s
+  resources:
+    limits:
+      cpus: '0.5'
+      memory: 512M
+    reservations:
+      cpus: '0.2'
+      memory: 128M
 x-build: &Build
   context:    ./
   dockerfile: *dockerfile
@@ -114,36 +144,13 @@ x-build: &Build
     *monorepoArgs
   #platforms:     [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
   #platforms:    [ "linux/arm64","linux/arm/v7" ]
-x-healthcheckProxy: &healthcheckProxy
-  test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8118/health || exit 1"]
-  interval: 30s
-  timeout: 10s
-  retries: 3
-  start_period: 40s
-x-deploy: &deploy
-  replicas: 2
-  update_config:
-    parallelism: 2
-    delay: 10s
-    order: start-first
-  #restart_policy:
-  #  condition: "Always"
-  restart_policy:
-    condition: on-failure
-    delay: 5s
-    #max_attempts: 999
-  resources:
-    limits:
-      cpus: '0.5'
-      memory: 512M
-    reservations:
-      cpus: '0.2'
-      memory: 128M
 
 ## ----------------------------------------------------------------------------------------------------------------------------------------------
 ## MARK: NETWORKS
 ## ----------------------------------------------------------------------------------------------------------------------------------------------
 networks:
+  #pihole_net:
+  #  external: true
   net:
     #driver: bridge
     ## For overlay networks in swarm mode:
@@ -227,8 +234,8 @@ services:
       #  published: 8089
       #  protocol: tcp
     #platform:       linux/arm/v7
-    #platform:       linux/amd64
     #platform:       linux/arm64
+    #platform:       linux/amd64
     #platform:       linux/arm/v7,linux/amd64,linux/arm64
     build:
       <<: *Build
@@ -242,13 +249,14 @@ services:
       #  # - linux/armv7 ## no match for platform in manifest: not found
       #  # - linux/ppc64le
       #  # - linux/s390x
+    restart: always
+    #restart: unless-stopped
     deploy:
       <<: *deploy
     # To avoid issue with named volume and mounting time
     <<: *security-opts
     #cap_add: [ SYS_ADMIN, SYS_TIME ]
     dns: *dns
-    restart: always
     env_file: stack.env
     environment:
       ## https://docs.docker.com/compose/environment-variables/env-file/
@@ -425,6 +433,8 @@ services:
   #      ENTRYPOINT: start.sh
   #      MNT: ./
   #  dns: *dns
+  #  restart: unless-stopped
+  #  #restart: always
   #  ports:
   #    - 53:53/tcp
   #    - 53:53/udp
@@ -443,4 +453,3 @@ services:
   #  volumes:
   #    - ./etc-pihole:/etc/pihole
   #    - ./etc-dnsmasq.d:/etc/dnsmasq.d
-  #  restart: unless-stopped

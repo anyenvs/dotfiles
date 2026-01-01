@@ -1,0 +1,103 @@
+ARG DIST=alpine:3.17
+#ARG DIST=alpine:edge
+FROM ${DIST} AS base
+
+ARG S6_OVERLAY_VERSION=v3.1.1.2
+RUN cat /etc/apk/repositories
+#ENV WEBPASSWORD=changeme
+ENV S6_OVERLAY_VERSION=${S6_OVERLAY_VERSION:-}
+    #S6_OVERLAY_VERSION=${S6_OVERLAY_VERSION-v3.1.1.2}
+
+ENV REV_SERVER true
+ENV REV_SERVER_TARGET 10.2.3.1
+ENV REV_SERVER_DOMAIN local.domain
+ENV REV_SERVER_CIDR 10.2.3.4/24
+ENV DNSSEC true
+ENV DNS1 127.0.0.1#5335
+ENV DNS2 127.0.0.1#5335
+
+RUN set -xe ;\
+    . /etc/os-release &&\
+    _OS=$(uname -s | tr '[:upper:]' '[:lower:]') && _ARCH=$(uname -m | tr '[:upper:]' '[:lower:]' | sed 's/x86_64/amd64/g; s/armv7.*/armv7/g; s/aarch64/arm64/g' ) &&\
+    case "$VERSION_ID" in \
+      3.17*) \
+            echo apk add --repository=http://dl-cdn.alpinelinux.org/alpine/v3.17/community tor runit ;\
+          ;; \
+      *) echo -e 'http://dl-cdn.alpinelinux.org/alpine/edge/main\nhttp://dl-cdn.alpinelinux.org/alpine/edge/testing\nhttp://dl-cdn.alpinelinux.org/alpine/edge/community' > /etc/apk/repositories ;; \
+    esac ;\
+    cat /etc/apk/repositories || true ;
+
+RUN apk --no-cache update && apk upgrade \
+        && apk --no-cache add bash git openrc libcap curl shadow libcap busybox-openrc busybox-mdev-openrc busybox-extras-openrc dnsmasq unbound expat tree \
+        && mkdir -p /run/openrc \
+        && touch /run/openrc/softlevel \
+        || exit $? ;
+
+RUN test -z "$S6_OVERLAY_VERSION" \
+    && apk --no-cache add s6 s6-overlay \
+        s6-linux-init-static \
+        s6-openrc \
+        s6-portable-utils \
+        s6-networking-dev \
+        s6-dns-static \
+        s6-dns \
+        s6-linux-init \
+        s6-overlay-helpers \
+        s6-ipcserver \
+        s6-static \
+        s6-networking-static \
+        s6-rc-static \
+        s6-overlay-syslogd \
+        s6-linux-utils \
+        s6-rc \
+        s6-networking \
+        || true ;
+
+COPY s6/alpine-root /
+COPY s6/service /usr/local/bin/service
+COPY version/versions /etc/pihole/versions
+
+RUN mkdir -p /etc/pihole
+# Maybe temporary fix permanent?
+RUN touch /etc/pihole/setupVars.conf
+COPY advanced /etc/pihole/advanced
+COPY automated_install /etc/pihole/automated_install
+
+RUN bash /etc/pihole/automated_install/docker-setup.sh
+RUN curl --output /etc/unbound/root.hints https://www.internic.net/domain/named.cache
+RUN cp /etc/unbound/unbound.conf /etc/unbound/unbound.conf.bak
+RUN sed '/^server:/a verbosity: 0\nport: 5335\ndo-ip4: yes\ndo-udp: yes\ndo-tcp: yes\ndo-ip6: no\nprefer-ip6: no\nroot-hints: "/etc/unbound/root.hints"\nharden-glue: yes\nharden-dnssec-stripped: yes\nuse-caps-for-id: no\nedns-buffer-size: 1232\nprefetch: yes\nnum-threads: 1\nso-rcvbuf: 1m\nprivate-address: 192.168.0.0/16\nprivate-address: 169.254.0.0/16\nprivate-address: 172.16.0.0/12\nprivate-address: 10.0.0.0/8\nprivate-address: fd00::/8\nprivate-address: fe80::/10' /etc/unbound/unbound.conf.bak >/etc/unbound/unbound.conf
+
+## ensure www-data user exists
+## 82 is the standard uid/gid for "www-data" in Alpine
+RUN set -x ; \
+    addgroup -g 82 -S www-data ; \
+    adduser -u 82 -D -S -G www-data www-data && exit 0 ; exit 1
+
+#RUN sed -i 's/exec/echo exec/g' /s6-init
+#RUN echo "for i in 1 2 3 4 5 ;do /package/admin/s6-overlay/libexec/preinit ; /package/admin/s6-overlay/libexec/stage0; ls -la /run/s6/basedir/bin ; exec /usr/bin/s6-overlay-suexec '/package/admin/s6-overlay/libexec/preinit' '' /package/admin/s6-overlay/libexec/stage0 \"\$@\" || true ; sleep 2 ;done" >> /s6-init
+
+# php config start passes special ENVs into
+ARG PHP_ENV_CONFIG
+ENV PHP_ENV_CONFIG /etc/lighttpd/conf-enabled/15-fastcgi-php.conf
+ARG PHP_ERROR_LOG
+ENV PHP_ERROR_LOG /var/log/lighttpd/error-pihole.log
+ENV IPv6 True
+
+EXPOSE 53 53/udp
+EXPOSE 67/udp
+EXPOSE 80
+
+ENV S6_KEEP_ENV 1
+ENV S6_BEHAVIOUR_IF_STAGE2_FAILS 2
+ENV S6_CMD_WAIT_FOR_SERVICES_MAXTIME 0
+
+ENV FTLCONF_LOCAL_IPV4 0.0.0.0
+ENV FTL_CMD no-daemon
+ENV DNSMASQ_USER pihole
+
+ENV PATH /opt/pihole:/command:${PATH}
+HEALTHCHECK CMD dig +short +norecurse +retry=0 @127.0.0.1 pi.hole || exit 1
+
+ENTRYPOINT [ "/s6-init" ]
+#ENTRYPOINT ["start.sh"]
