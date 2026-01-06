@@ -67,6 +67,8 @@ alias gs='git fetch --all;git status -uno; BRANCH=$(git rev-parse --abbrev-ref H
 alias gd='git diff --no-ext-diff -w HEAD'
 
 ###--- Main
+[ -n "${DEBUG}" ] && { export PS4='+ [${BASH_SOURCE##*/}:${LINENO}] ' ; set -x; }
+
 test -d /opt/DATA_1 || ( cd /opt ; ln -svnf ${DATA_1} DATA_1 )
 test -d /otp || ( path=$_ ; cd / ; ln -svnf ${DATA_1_APPS}/linux-armv7/${path##*/} ${path##*/} )
 

@@ -210,13 +210,14 @@ services:
       #  # - linux/armv7 ## no match for platform in manifest: not found
       #  # - linux/ppc64le
       #  # - linux/s390x
+    restart: always
+    #restart: unless-stopped
     deploy:
       <<: *deploy
     # To avoid issue with named volume and mounting time
     <<: *security-opts
     #cap_add: [ SYS_ADMIN, SYS_TIME ]
     dns: *dns
-    restart: always
     env_file: stack.env
     environment:
       ## https://docs.docker.com/compose/environment-variables/env-file/
