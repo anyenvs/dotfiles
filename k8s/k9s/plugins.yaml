@@ -1,0 +1,573 @@
+## https://github.com/derailed/k9s/blob/master/plugins/node-root-shell.yaml
+plugins:
+  get-all:
+    shortCut: Ctrl-G
+    confirm: false
+    description: "Get All"
+    scopes:
+      - all
+    command: sh
+    background: false
+    args:
+      - -c
+      - "oc get-all -n $NAMESPACE | less"
+  show-secret:
+    shortCut: s
+    confirm: false
+    description: "Show Secret"
+    scopes:
+      - secrets
+    command: sh
+    background: false
+    args:
+      - -c
+      - |
+        oc show secret -n $NAMESPACE $NAME | bat --style=numbers --color=always --line-range :500 --paging=always -l json;
+        #read -n 1 -s -r -p "Press any key to continue";
+  ## ########################################
+  ## Cloudrock Cluster
+  ## ########################################
+  cloudrockcluster:  # This defines a shortcut key 'c' for the "CloudRockCluster" view
+    confirm: true
+    background: false
+    shortCut: m
+    # The description will appear in the K9s menu
+    description: "View CloudRockCluster Custom Resources"
+    scopes:
+      - all # This makes the plugin available in the 'all' view
+    # The command to execute. We use the standard kubectl get command for our CRD.
+    command: kubectl
+    # The arguments for the command
+    args:
+      - get
+      - cloudrockclusters.automation.ibm.com
+      - -n
+      - $NAMESPACE
+    # Whether
+    # kubectl k9s view -n $NAMESPACE cloudrockclusters.automation.ibm.com
+    # This specifies the view to use (you will create this view in the next step)
+    view:
+      name: cloudrockcluster
+
+  cloudrockclusterstatus:
+    shortCut: s
+    # The description will appear in the K9s menu
+    description: "CloudRockCluster Status"
+    scopes:
+      - cloudrockclusters
+    # The command to execute. We use the standard kubectl get command for our CRD.
+    command: bash
+    args:
+      - -c
+      - |
+        oc --context $CONTEXT get crc $NAME -n $NAMESPACE -o json | jq '. as $r |$r.status.addonStatus | {CRC: ($r.metadata.name ), NS:( $r.metadata.namespace ),
+          kube_version:$r.spec.kube_version,infrastructure:$r.spec.infrastructure,location:$r.spec.location,multiaz:$r.spec.multiaz,
+          workerPoolStatus:$r.status.workerPoolStatus,clusterStatus:$r.status.clusterStatus,clusterVersionStatus:$r.status.clusterVersionStatus,
+          AddonStatus: (.)} ' \
+          | yq -P | bat --style=numbers --color=always --line-range :500 -l yaml --paging=always;
+        echo "oc --context $CONTEXT get crc $NAME -n $NAMESPACE -o json | jq '. as \$r |$r.status.addonStatus | {CRC: (\$r.metadata.name ), NS:( \$r.metadata.namespace ), workerPoolStatus:\$r.status.workerPoolStatus,clusterStatus:\$r.status.clusterStatus,clusterVersionStatus:\$r.status.clusterVersionStatus, AddonStatus: (.)} ' | yq -P";
+        #read -n 1 -s -r -p "Press any key to continue";
+    # Whether
+    # kubectl k9s view -n $NAMESPACE cloudrockclusters.automation.ibm.com
+    # This specifies the view to use (you will create this view in the next step)
+    view:
+      name: cloudrockclusterstatus
+
+  cloudrockclusteraddonstatus:
+    shortCut: a
+    # The description will appear in the K9s menu
+    description: "CR ADDON Status"
+    scopes:
+      - cloudrockclusters
+    # The command to execute. We use the standard kubectl get command for our CRD.
+    command: bash
+    args:
+      - -c
+      - |
+        #oc --context $CONTEXT get crc $NAME -n $NAMESPACE -o jsonpath={.spec.addon} | yq  '.|keys|.[]' | fzf -m --header '$NAME' --height 30% --query='' --preview-window=right,70% --preview 'oc --context $CONTEXT get crc $NAME -n $NAMESPACE -o jsonpath={.spec.addon.{}} | yq -P' ;
+        #oc --context $CONTEXT get crc $NAME -n $NAMESPACE -o jsonpath={.spec.addon} | jq -r '.|keys|.[]' | fzf --header '$NAME addons status' --height 30% --query='' --preview-window=right,70% --preview 'oc --context $CONTEXT get crc $NAME -n $NAMESPACE -o json | yq -P '\''. as $r | {"{}":( $r.spec.addon.{} ), "Status":($r.status.addonStatus.{}) }'\'' ' ;
+        oc --context $CONTEXT get crc $NAME -n $NAMESPACE -o json | jq -r '. as $r | ( $r.spec.addon | keys[] as $key | "\($key) |\($r.status.addonStatus[$key].status)" )' | fzf --header '$NAME addons status (Press CTRL-R to reload)' --height 30% --query='' --preview-window=right,70% --preview 'ADDON=$( awk '\''{print $1}'\'' <<<{} ) ; oc --context $CONTEXT get crc $NAME -n $NAMESPACE -o json | yq -P '\''. as $r | {"'\''$ADDON'\''":( $r.spec.addon.'\''$ADDON'\'' ), "Status":($r.status.addonStatus.'\''$ADDON'\'') }'\'' ' --bind 'ctrl-r:reload( oc --context $CONTEXT get crc $NAME -n $NAMESPACE -o json | jq -r '\''. as $r | ( $r.spec.addon | keys[] as $key | "\($key) |\($r.status.addonStatus[$key].status)" )'\'' )' || echo "" ;
+        #--preview 'ADDON=$(aws "{print $1}") ; oc --context $CONTEXT get crc $NAME -n $NAMESPACE -o json | yq -P '\''. as $r | {"'$ADDON'":( $r.spec.addon.{} ), "Status":($r.status.addonStatus.{}) }'\'' ' ;
+        # yq -P | bat --style=numbers --color=always --line-range :500 -l yaml --paging=always;
+        #echo "oc --context $CONTEXT get crc $NAME -n $NAMESPACE -o json | jq '. as \$r |$r.status.addonStatus | {CRC: (\$r.metadata.name ), NS:( \$r.metadata.namespace ), workerPoolStatus:\$r.status.workerPoolStatus,clusterStatus:\$r.status.clusterStatus,clusterVersionStatus:\$r.status.clusterVersionStatus, AddonStatus: (.)} ' | yq -P";
+        #read -n 1 -s -r -p "Press any key to continue";
+    # Whether
+    # kubectl k9s view -n $NAMESPACE cloudrockclusters.automation.ibm.com
+    # This specifies the view to use (you will create this view in the next step)
+    view:
+      name: cloudrockclusteraddonstatus
+
+  cloudrockaddonreconcile:
+    shortCut: r
+    description: "Cluster Addon Reconcile"
+    scopes:
+      - cloudrockclusters
+    # The command to execute. We use the standard kubectl get command for our CRD.
+    command: bash
+    args:
+      - -c
+      - |
+        ##
+        _ADDON=$( oc --context $CONTEXT get crc $NAME -n $NAMESPACE -o jsonpath={.spec.addon} | jq -r '.|keys|.[]' | fzf --header '$NAME addon reconcile' --height 30% --query='' --preview-window=right,70% \
+            --preview 'oc --context $CONTEXT get crc $NAME -n $NAMESPACE -o json | yq -P '\''. as $r | {"{}":( $r.spec.addon.{} ), "Status":($r.status.addonStatus.{}) }'\'' ' ; )
+        echo $_ADDON;
+        test -n "$_ADDON" || { echo "No addon selected" ; exit 0 ; }
+
+        _ACTION=$( fzf --header 'ACTION' --height 30% < <( echo Reconcile ; echo Disable; echo Enable; ) );
+        test -n "$_ACTION" || { echo "No ACTION selected" ; exit 0 ; }
+
+        case $_ACTION in
+          Reconcile)
+            oc --context $CONTEXT patch crc $NAME -n $NAMESPACE --type=json -p '[{"op":"remove", "path":"/spec/addon/'$_ADDON'/config/reconcile"}]' ##--dry-run=client -o yaml;
+            sleep 1;
+            oc --context $CONTEXT patch crc $NAME -n $NAMESPACE --type=json -p '[{"op":"add", "path":"/spec/addon/'$_ADDON'/config/reconcile","value":true}]' ##--dry-run=client -o yaml;
+          ;;
+          Disable)
+            oc --context $CONTEXT patch crc $NAME -n $NAMESPACE --type=json -p '[{"op":"replace", "path":"/spec/addon/'$_ADDON'/enabled","value":false}]' ##--dry-run=client -o yaml;
+          ;;
+          Enable)
+            oc --context $CONTEXT patch crc $NAME -n $NAMESPACE --type=json -p '[{"op":"replace", "path":"/spec/addon/'$_ADDON'/enabled","value":true}]' ##--dry-run=client -o yaml;
+          ;;
+          *) echo "Invalid ACTION" ; exit 1 ;;
+        esac
+        #read -n 1 -s -r -p "Press any key to continue";
+    # Whether
+    # kubectl k9s view -n $NAMESPACE cloudrockclusters.automation.ibm.com
+    # This specifies the view to use (you will create this view in the next step)
+    view:
+      name: cloudrockaddonreconcile
+
+
+  cloudrockclusterconsole:
+    shortCut: x
+    description: "Cluster Console"
+    scopes:
+      - cloudrockclusters
+      - contexts
+      #- all
+    # The command to execute. We use the standard kubectl get command for our CRD.
+    command: /usr/local/bin/bash
+    args:
+      - -ec
+      - |
+        #DEBUG=1
+        [ -n "${DEBUG}" ] && { export PS4='+ [${BASH_SOURCE##*/}:${LINENO}] ' ; set -x; };
+
+        _HELPERS=~/bin/_k9s-helpers.sh
+        while true ; do
+            test -f $_HELPERS || { echo "$_HELPERS not found"; } ;
+            echo "source $_HELPERS" ;
+            source $_HELPERS && break ;
+            read -n 1 -s -r -p "Press any key to continue (Ctrl-C to abort)" ;
+        done
+
+
+        ## test token
+        #_rosa-login() {
+        #  export AWS_CONFIG_FILE=~/.aws/config
+        #  #export $(_aws-profile)
+        #  AWS_PROFILE_T=( $( aws configure list-profiles | fzf -m --header 'AWS_PROFILE' --height 30% ) )
+        #  AWS_REGION_T=( $( AWS_PROFILE=$AWS_PROFILE_T aws ec2 describe-regions --query 'Regions[].RegionName' --output text | xargs -n1 | fzf -m --header 'AWS_REGION' --height 30% --query='east-1' || { set +x; return 1; } ) )
+        #  test -n "$ROSA_TOKEN" || { echo "ROSA_TOKEN is required" ; return 1 ; }
+        #  eval "AWS_REGION=$AWS_REGION_T AWS_PROFILE=$AWS_PROFILE_T rosa login --token=$ROSA_TOKEN" ;
+        #}
+
+        #_rosa-token-refresh() {
+        #  ROSA_TOKEN_SELECTOR=( $( (env | sed 's/=.*//g') | fzf --height 30% --query="'ROSA" --preview 'export ROSA_TOKEN_GOVCLOUD=$( pbpaste | grep "^ey" ) ; env | grep -i {} | sed -E "s/^(.*)(API|TOKEN|PASS|KEY|SECRET)(.*)=(...).*(.....)$/\1\2\=\4***\5/g"' \
+        #    --bind "r:execute( export ROSA_TOKEN_GOVCLOUD=$( pbpaste | grep '^ey' ) )" \
+        #    --bind "ctrl-r:reload( env | sed 's/=.*//g' )" --header 'Press CTRL-R to reload' || return 1; ))
+        #  export ROSA_TOKEN_GOVCLOUD=$( pbpaste | grep '^ey' );
+        #  test "$ROSA_TOKEN_SELECTOR" == "ROSA_TOKEN_GOVCLOUD" -a -z "$ROSA_TOKEN_GOVCLOUD" && read -p "Enter ROSA_TOKEN: " ROSA_TOKEN_GOVCLOUD;
+        #  ROSA_TOKEN_T=$(eval "echo \$$ROSA_TOKEN_SELECTOR");
+        #  ROSA_TOKEN=$ROSA_TOKEN_T _rosa-login ;
+        #}
+
+        #_CLUSER="${NAMESPACE}";
+        #read -n 1 -s -r -p "$NAME : ${NAME//\/*/} : $RESOURCE : $CLUSTER : $CONTEXT : $NAMESPACE : Press any key to continue";
+        #echo _CLUSER="${NAME//\/*/}";
+        #read -n 1 -s -r -p "$NAME : ${NAME//\/*/} : $_CLUSER : $RESOURCE : $CLUSTER : $CONTEXT : $NAMESPACE : Press any key to continue";
+
+        _CLUSTER=$( echo "${NAMESPACE}" | awk -F'-' '{for(i=2;i<=(NF-4);i++){if(i>2)printf "-";printf $i}}' )
+        test -z "$_CLUSTER" && _CLUSTER=$NAME ;
+        #test "$_CLUSTER" == "$NAME" && { _CLUSTER=$NAME ; ocm list clusters -p search="name='$NAME'" --columns ID --no-headers || _rosa-token-refresh ; };
+        #test "$_CLUSTER" != "$NAME" &&
+        ocm list clusters -p search="name='$_CLUSTER'" --columns ID --no-headers || _rosa-token-refresh ;
+        #read -n 1 -s -r -p "Press any key to continue";
+
+        _CLUSTER=( $( fzf --header 'Open CLUSTER Concole' --height 30% --preview-window=right,70% --preview 'oc show secret {} -n $NAMESPACE --context $CONTEXT ' < <( echo $_CLUSTER ;
+                    xargs -n1 <<< "ap-usge1-pp-dp ap-usge1-pp-cp ap-usge1-dp-01 ap-usge1-cp-01 ap-dp-t-fedramp ap-cp-t-fedramp";
+                    xargs -n1 <<< "ap-cp-001 ap-dp-001 ap-cp-101 ap-dp-101";
+                    xargs -n1 <<< "ap-use1-d-cp-01 ap-use1-d-dp-01 ap-use1-t-cp-01 ap-use1-t-dp-01 ap-use1-cp-01 ap-use1-dp-01";
+                    xargs -n1 <<< "ap-pbca-cp ap-pbca-dp";
+                  ) || echo "" ) )
+        test -n "$_CLUSTER" || { echo "No CLUSTER selected" ; exit 0 ; }
+        set -x
+        _CLUSTER_ID=( $( ocm list clusters -p search="name='$_CLUSTER'" --columns ID --no-headers ) )
+        read -n 1 -s -r -p "Login CLI $_CLUSTER [y/n] ? " YN ;
+        test "$YN" == "y" && ( ocm cluster login -t $_CLUSTER_ID || read -n 1 -s -r -p "ocm cluster login -t $_CLUSTER_ID  - failed" ) ;
+        _CONSOLE=$( ocm describe cluster $( ocm list clusters $_CLUSTER_ID --columns ID --no-headers ) --json | jq -r '.console.url' )
+        set +x
+        echo $_CONSOLE;
+        test -n "$_CONSOLE" && open "$_CONSOLE" || read -n 1 -s -r -p "open $_CONSOLE failed" ;
+        #read -n 1 -s -r -p "Press any key to continue";
+        echo
+    # Whether
+    # kubectl k9s view -n $NAMESPACE cloudrockclusters.automation.ibm.com
+    # This specifies the view to use (you will create this view in the next step)
+    view:
+      name: cloudrockaddonreconcile
+
+
+
+  cloudrockclusterlogs:
+    shortCut: Ctrl-L
+    description: "Controller CRC Logs"
+    scopes:
+      - cloudrockclusters
+      - deployments
+      - deployments.v1.apps
+    # The command to execute. We use the standard kubectl get command for our CRD.
+    command: bash
+    args:
+      - -c
+      - |
+        ## nl
+        #oc --context $CONTEXT -n cloudrock-controller logs -f deployment/cloudrock-controller | grep -iE '$NAME' --color=always | nl -ba
+        ## tac | bat --line-range :10 | tac | bat
+        #oc --context $CONTEXT -n cloudrock-controller logs -f deployment/cloudrock-controller | grep -iE '$NAME' --color=always | bat --paging=never -l json --style=numbers,header ;
+        #oc --context $CONTEXT -n cloudrock-controller logs -f deployment/cloudrock-controller | grep -iE '$NAME' --color=always | bat --paging=always -l json --style=numbers,header ;
+        echo '## https://k9scli.io/topics/plugins/'
+        echo -e "RESOURCE_GROUP=$RESOURCE_GROUP \nRESOURCE_VERSION=$RESOURCE_VERSION \nRESOURCE_NAME=$RESOURCE_NAME \nNAME=$NAME \nGROUPS=$GROUPS"
+        _LOGGER=$( fzf --header 'Use Gonzo ?' --height 30% < <( echo "" ; echo "gonzo --format=json" ; echo "gonzo --format=text" ; ) --preview 'echo {}' || echo "" )
+        _SINCE=$( fzf --header 'SINCE_TIME' --height 30% < <( echo "" ; echo 10m ; echo 1h ; echo 6h ; echo 12h ; echo 24h ; echo 360h ; ) --preview 'echo {}' || echo "" )
+        case $_LOGGER in
+          gonzo*)
+              _CMD="oc --context $CONTEXT -n $NAMESPACE logs -f ${RESOURCE_NAME}/$NAME ${_SINCE:+--since=$_SINCE}"
+              echo $_CMD;
+              #read -n 1 -s -r -p "Press any key to continue";
+              eval "$_CMD | $_LOGGER " ;
+          ;;
+          *)
+            _CMD="oc --context $CONTEXT -n $NAMESPACE logs -f ${RESOURCE_NAME}/$NAME ${_SINCE:+--since=$_SINCE}"
+            echo $_CMD;
+            #read -n 1 -s -r -p "Press any key to continue";
+            oc --context $CONTEXT -n $NAMESPACE logs -f ${RESOURCE_NAME}/$NAME ${_SINCE:+--since=$_SINCE} | bat --paging=never -l json --style=numbers,header ;
+            ;;
+        esac
+        echo $_CMD
+        #read -n 1 -s -r -p "Press any key to continue";
+    # Whether
+    # kubectl k9s view -n $NAMESPACE cloudrockclusters.automation.ibm.com
+    # This specifies the view to use (you will create this view in the next step)
+    view:
+      name: cloudrockclusterlogs
+
+  cloudrockaddonlogs:
+    shortCut: l
+    description: "Controller Addon Logs"
+    scopes:
+      - cloudrockclusters
+      - deployments
+      - deployments.v1.apps
+    # The command to execute. We use the standard kubectl get command for our CRD.
+    command: bash
+    args:
+      - -c
+      - |
+        ##
+        _LOGGER=$( fzf --header 'Use Gonzo ?' --height 30% < <( echo "" ; echo "gonzo --format=json" ; echo "gonzo --format=text" ; ) --preview 'echo {}' || echo "" )
+        _SINCE=$( fzf --header 'SINCE_TIME' --height 30% < <( echo "" ; echo 10m ; echo 1h ; echo 6h ; echo 12h ; echo 24h ; echo 360h ; ) --preview 'echo {}' || echo "" )
+        case $_LOGGER in
+          gonzo*)
+              _RES=$( oc --context $CONTEXT -n cloudrock-controller get deploy -o name | fzf -m --header '$NAME' --height 30% --query='' --preview-window=right,70% )
+              #oc --context $CONTEXT -n $NAMESPACE logs -f deploy/$_RES | gonzo"
+              #_CMD="oc --context $CONTEXT -n cloudrock-controller logs -f ${RESOURCE_GROUP}/$NAME ${_SINCE:+--since=$_SINCE}"
+              _CMD="oc --context $CONTEXT -n cloudrock-controller logs -f $_RES ${_SINCE:+--since=$_SINCE} "
+              eval "$_CMD | $_LOGGER " ;
+          ;;
+          *)
+            _POD=$( oc --context $CONTEXT -n cloudrock-controller get pod -o name | fzf -m --header '$NAME' --height 30% --query='' --preview-window=right,70% )
+            test -n "$_POD" || { echo "No POD selected" ; exit 0 ; }
+            _CMD="oc --context $CONTEXT -n cloudrock-controller logs -f $_POD ${_SINCE:+--since=$_SINCE}"
+            echo $_CMD;
+            oc --context $CONTEXT -n cloudrock-controller logs -f $_POD ${_SINCE:+--since=$_SINCE} | bat --paging=never -l json --style=numbers,header ;
+            ;;
+        esac
+        echo $_CMD
+        #read -n 1 -s -r -p "Press any key to continue";
+    # Whether
+    # kubectl k9s view -n $NAMESPACE cloudrockclusters.automation.ibm.com
+    # This specifies the view to use (you will create this view in the next step)
+    view:
+      name: cloudrockaddonlogs
+
+  ## ########################################
+  ## MARK: Cloudrock Controller
+  ## MARK: Token Rotate
+  ## ########################################
+  cp-token-rotate:
+    shortCut: Shift-R
+    description: "CP Token Rotate"
+    scopes:
+      - cloudrockclusters
+    # The command to execute. We use the standard kubectl get command for our CRD.
+    command: /usr/local/bin/bash
+    args:
+      - -ec
+      - |
+        #DEBUG=1
+        [ -n "${DEBUG}" ] && { export PS4='+ [${BASH_SOURCE##*/}:${LINENO}] ' ; set -x; };
+
+        _HELPERS=~/bin/_k9s-helpers.sh
+        while true ; do
+            test -f $_HELPERS || { echo "$_HELPERS not found"; } ;
+            echo "source $_HELPERS" ;
+            source $_HELPERS && break ;
+            read -n 1 -s -r -p "Press any key to continue (Ctrl-C to abort)" ;
+        done
+
+        echo "${NAMESPACE}"
+        _CLUSTER=$( echo "${NAMESPACE}" | awk -F'-' '{for(i=2;i<=(NF-4);i++){if(i>2)printf "-";printf $i}}' )
+
+        ocm list clusters -p search="name='$_CLUSTER'" --columns ID --no-headers || _rosa-token-refresh ;
+
+        _CLUSTER=( $( fzf -m --header $'CLUSTER List\nhttps://rb.gy/4c5s2r\nhttps://pages.github.ibm.com/ibm-saas-platform/MultiCloud-SaaS-Framework/Architectural_Overview/Resources/mcsp_clusters/#__tabbed_2_1' --height 30% --preview-window=right,70% --preview 'oc show secret {} -n $NAMESPACE --context $CONTEXT ' < <( echo $_CLUSTER ;
+                    xargs -n1 <<< "ap-usge1-pp-dp ap-usge1-pp-cp ap-usge1-dp-01 ap-usge1-cp-01 ap-dp-t-fedramp ap-cp-t-fedramp";
+                    xargs -n1 <<< "ap-cp-001 ap-dp-001 ap-cp-101 ap-dp-101";
+                    xargs -n1 <<< "ap-use1-d-cp-01 ap-use1-d-dp-01 ap-use1-t-cp-01 ap-use1-t-dp-01 ap-use1-cp-01 ap-use1-dp-01";
+                    xargs -n1 <<< "ap-pbca-cp ap-pbca-dp";
+                  ) || echo "" ) )
+        test -n "$_CLUSTER" || { echo "No CLUSTER selected" ; exit 0 ; }
+        _CLUSTERS=${_CLUSTER[@]} ; echo "Selected Clusters: $_CLUSTERS"
+
+        _CMD="oc govcloud token-patch -c ${_CLUSTERS// /,} --restart"
+        echo -e "Run cmd below (Ctrl-C to abort) ?\n";
+        read -n 1 -s -r -p "$_CMD"; echo;
+        eval "$_CMD" || true ; echo "Done.";
+
+        read -n 1 -s -r -p "Press any key to continue";
+    view:
+      name: cp-token-rotate
+
+  ## ########################################
+  ## Routes
+  ## ########################################
+  oc-routes:
+    shortCut: r
+    description: "Open Routes"
+    scopes:
+      - statefulSets
+      - deployments
+      - pods
+      - routes
+      - ingresses
+    # The command to execute. We use the standard kubectl get command for our CRD.
+    command: /usr/local/bin/bash
+    args:
+      - -ec
+      - |
+        #DEBUG=1
+        [ -n "${DEBUG}" ] && { export PS4='+ [${BASH_SOURCE##*/}:${LINENO}] ' ; set -x; };
+        _ROUTES=( $( oc --context $CONTEXT get routes -n $NAMESPACE -o jsonpath='{range .items[*]}{.spec.host}{"\n"}{end}' --ignore-not-found | fzf -m --header 'ROUTES' --height 30% --query='' --preview-window=right,60% --preview 'oc --context $CONTEXT get routes -n $NAMESPACE -o jsonpath='\''{range .items[*]}{.metadata.name}{"\t"}{.spec.host}{"\n"}{end}'\'' --ignore-not-found' || echo "" ) );
+        echo "Selected routes: ${_ROUTES[*]}";
+        #test -n "${_ROUTES} || { echo "No routes selected" ; }
+        for _ROUTE in "${_ROUTES[@]}" ; do
+          test -n "$_ROUTE" && open "https://$_ROUTE" || read -n 1 -s -r -p "Cannot open: https://$_ROUTE" ;
+          sleep 1;
+        done
+        #read -n 1 -s -r -p "Press any key to continue";
+        echo "Done.";
+    view:
+      name: oc-routes
+
+
+  # Defines a plugin to provide a `ctrl-l` shortcut to tail the logs while in pod view.
+  fred:
+    # Define a mnemonic to invoke the plugin
+    shortCut: Ctrl-L
+    # What will be shown on the K9s menu
+    description: Pod logs
+    # Collections of views that support this shortcut. (You can use `all`)
+    scopes:
+    - po
+    # The command to run upon invocation. Can use Krew plugins here too!
+    command: kubectl
+    # Whether or not to run the command in background mode
+    background: false
+    # Defines the command arguments
+    args:
+    - logs
+    - -f
+    - $NAME
+    - -n
+    - $NAMESPACE
+    - --context
+    - $CONTEXT
+
+  node-root-shell:
+    shortCut: s
+    description: Run root shell on node
+    dangerous: true
+    scopes:
+      - nodes
+    command: bash
+    background: false
+    confirm: true
+    args:
+      - -c
+      - |
+        host="$1"
+        json='
+        {
+          "apiVersion": "v1",
+          "spec": {
+            "hostIPC": true,
+            "hostNetwork": true,
+            "hostPID": true
+        '
+        if ! [[ -z "$host" ]]; then
+          json+=",
+          \"nodeSelector\" : {
+            \"kubernetes.io/hostname\" : \"$host\"
+          }
+          ";
+        fi
+        json+='
+          }
+        }
+        '
+        kubectl run -ti --image icr.io/ibm-saas-platform/external-images/ubi-busybox:1.37.0 --rm --restart=Never --overrides="$json" root --command -- nsenter -t 1 -m -u -n -i -- bash -l;
+        #kubectl run -ti --image icr.io/ibm-saas-platform/external-images/ubi-busybox:1.37.0 --rm --privileged --restart=Never --overrides="$json" root --command -- nsenter -t 1 -m -u -n -i -- bash -l;
+        read -n 1 -s -r -p "Press any key to continue";
+  kubectl-node_shell:
+    shortCut: Ctrl-N
+    confirm: false
+    description: "Shell <node_shell>"
+    scopes:
+      - node
+    command: kubectl-node_shell
+    background: false
+    args:
+      - $NAME
+  dive:
+    shortCut: b
+    confirm: false
+    description: "Dive image"
+    scopes:
+      - containers
+    command: dive
+    background: false
+    args:
+      - $COL-IMAGE
+
+  watch-events:
+    shortCut: Shift-E
+    confirm: true
+    description: Get Events
+    scopes:
+    - all
+    command: sh
+    background: false
+    args:
+    - -c
+    - "kubectl events --context $CONTEXT --namespace $NAMESPACE --for $RESOURCE_NAME.${RESOURCE_GROUP:+.RESOURCE_GROUP}/$NAME --watch"
+
+  helm:
+    confirm: true
+    shortCut: Ctrl-T
+    description: Helm Charts
+    scopes:
+      - all
+    command: kubectl
+    background: false
+    args:
+      - get
+      - helmreleases
+      - --all-namespaces
+  ## ########################################
+  ## ARGOCD
+  ## ########################################
+  argocd:
+    shortCut: "s"
+    description: Sync ArgoCD Application
+    scopes:
+      - application
+    command: argocd
+    args:
+    - app
+    - sync
+    - $NAME
+    - --app-namespace
+    - $NAMESPACE
+    background: true
+    confirm: true
+
+  argocd-refresh-apps:
+    shortCut: Shift-R
+    confirm: false
+    scopes:
+      - apps
+      - appsets
+    description: Refresh a argocd app hard
+    command: bash
+    background: false
+    args:
+      - -c
+      - "kubectl --context $CONTEXT --namespace $NAMESPACE annotate applications $NAME argocd.argoproj.io/refresh=hard"
+
+  argocd-disable-auto-sync:
+    shortCut: Shift-Y
+    confirm: false
+    scopes:
+      - apps
+      - appsets
+    description: Disable argocd sync
+    background: false
+    command: bash
+    args:
+      - -c
+      - |
+        test "$RESOURCE_NAME" == "applicationsets" && APPSET_PATCH_JSON='
+            ,{"op":"replace", "path": "/spec/template/spec/ignoreDifferences", "value": [{"group":"automation.ibm.com","kind":"CloudRockVpc","jsonPointers":["/spec/vpctype","/spec/subnets"]}]},
+            {"op":"add", "path": "/spec/template/spec/syncPolicy/syncOptions", "value": ["RespectIgnoreDifferences=true"] }
+          ' ;
+        echo 'oc --context=$CONTEXT --namespace=$NAMESPACE patch $RESOURCE_NAME $NAME \
+        --type=json -p='\''[
+          {"op":"replace", "path": "/spec/syncPolicy", "value": {}}
+          '$APPSET_PATCH_JSON'
+          ]'\'' --dry-run=client -o yaml' ;
+        read -n 1 -s -r -p "Press any key to continue (CTRL-C to abort)";
+        oc --context=$CONTEXT --namespace=$NAMESPACE patch $RESOURCE_NAME $NAME \
+        --type=json -p='[
+          {"op":"replace", "path": "/spec/syncPolicy", "value": {}},
+          '$APPSET_PATCH_JSON'
+        ]' ;
+        read -n 1 -s -r -p "Press any key to continue";
+    #command: kubectl
+    #args:
+    #  - --context=$CONTEXT
+    #  - --namespace=$NAMESPACE
+    #  - patch
+    #  - applications
+    #  - $NAME
+    #  - "--type=json"
+    #  - '-p=[{"op":"replace", "path": "/spec/syncPolicy", "value": {}}]'
+
+  argocd-enable-auto-sync:
+    shortCut: Shift-B
+    confirm: false
+    scopes:
+      - apps
+      - appsets
+    description: Enable argocd sync
+    command: kubectl
+    background: false
+    args:
+      - --context=$CONTEXT
+      - --namespace=$NAMESPACE
+      - patch
+      - applications
+      - $NAME
+      - --type=merge
+      - '-p={"spec":{"syncPolicy":{"automated":{"selfHeal":true},"syncOptions":["ApplyOutOfSyncOnly=true","CreateNamespace=true"]}}}'
+      #- '-p={"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true},"syncOptions":["ApplyOutOfSyncOnly=true","CreateNamespace=true","PruneLast=true","PrunePropagationPolicy=foreground"]}}}'

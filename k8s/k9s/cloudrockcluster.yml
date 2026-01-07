@@ -1,0 +1,39 @@
+# ~/.k9s/views/cloudrockcluster.yml
+kind: CustomResourceDefinition
+version: v1alpha1
+apiVersion: automation.ibm.com/v1alpha1
+# The plural name of your CRD
+resource: cloudrockclusters.automation.ibm.com
+
+columns:
+  # Column 1: Name of the custom resource
+  - name: NAME
+    # .metadata.name is a standard field that will always exist.
+    #path: .metadata.name
+    #width: 30
+  # Column 2: Namespace
+  - name: NAMESPACE
+    #path: .metadata.namespace
+    #width: 15
+  # Column 3: Age of the resource
+  - name: AGE
+    #path: .metadata.creationTimestamp
+    #width: 20
+    #time: true
+  # Column 4: Example from the Spec - Adjust this based on your CRD!
+  #- name: VERSION
+    # This assumes your CR has a spec.version field.
+    #  path: .spec.version
+    # width: 15
+  # Column 5: Example from the Status - Adjust this based on your CRD!
+  # This is crucial for understanding the state of your resource.
+  #- name: STATUS
+    # This assumes your CR has a status.phase or status.condition field.
+    # A common pattern is to use '.status.phase' or the value of a status condition.
+    #   path: .status.phase
+    # width: 20
+  # Column 6: Another example from Spec
+  #- name: NODE COUNT
+  #  path: .spec.nodeCount
+  #  width: 12
+  # Add more columns as needed for your specific use case...

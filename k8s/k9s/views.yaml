@@ -1,59 +1,58 @@
-k9s:
- views:
-   v1/pods:
-     columns:
-       - AGE
-       - NAMESPACE
-       - NAME
-       - IP
-       - NODE
-       - STATUS
-       -ADY
-   v1/services:
-     columns:
-       - AGE
-       - NAMESPACE
-       - NAME
-       - TYPE
-       - CLUSTER-IP
-
-#  views:
-#    # Charts skins...
-#    charts:
-#      bgColor: default
-#      defaultDialColors:
-#        - *purple
-#        - *red
-#      defaultChartColors:
-#        - *purple
-#        - *red
-#    # TableView attributes.
-#    table:
-#      fgColor: *foreground
-#      bgColor: *background
-#      # Header row styles.
-#      header:
-#        fgColor: *foreground
-#        bgColor: *background
-#        sorterColor: *cyan
-#    # Xray view attributes.
-#    xray:
-#      fgColor: *foreground
-#      bgColor: *background
-#      cursorColor: *current_line
-#      graphicColor: *purple
-#      showIcons: false
-#    # YAML info styles.
-#    yaml:
-#      keyColor: *pink
-#      colonColor: *purple
-#      valueColor: *foreground
-#    # Logs styles.
-#    logs:
-#      fgColor: *foreground
-#      bgColor: *background
-#      indicator:
-#        fgColor: *foreground
-#        bgColor: *purple
-#        toggleOnColor: *green
-#        toggleOffColor: *cyan
+## https://k9scli.io/topics/columns/#:~:text=Overview&text=K9s%20provides%20for%20customizing%20resource,%24XDG_CONFIG_HOME%2Fk9s%2Fviews.
+views:
+  v1/pods:
+    sortColumn: AGE:asc
+    columns:
+      - NAME
+      - NAMESPACE
+      #- "%CPU/R"
+      #- "%CPU/L"
+      - "%MEM/R"
+      - "%MEM/L"
+  # => 🌚 New v0.40.6! You can also specify a namespace using a regular expression.
+  v1/pods@kube*:
+    columns:
+      - NAME
+      - AGE
+      - LABELS
+  v1/nodes:
+    sortColumn: MEM:desc
+    columns:
+      - NAME
+      - STATUS
+      - ROLE
+      - OS:.metadata.labels.kubernetes\.io/os
+      - TAINTS
+      - VERSION
+      - PODS
+      - CPU
+      - MEM
+      - "%CPU|H"
+      - "%MEM|H"
+      - CPU/A|H     # Does not fail, but does not hide
+      - MEM/A|H     # Does not fail, but does not hide
+      - AGE
+    #v1alpha1/CloudRockCluster:
+    #automation.ibm.com/v1alpha1/CloudRockCluster:
+    #cloudrockclusters.automation.ibm.com:
+    #  sortColumn: NAME:asc
+    #  columns:
+    #    - NAME
+    #    - NAMESPACE:.metadata.namespace
+    #    - AGE
+    # => 🌚 New v0.40.8! You can also reference a specific alias and display a custom view for it
+    #automation.ibm.com/v1alpha1/cloudrockclusters.automation.ibm.com:
+  #crcap:
+  automation.ibm.com/v1alpha1/cloudrockclusters:
+    sortColumn: NAME:asc
+    columns:
+      - NAME
+      - AGE
+      - NS:.metadata.namespace
+      - KV:.spec.kube_version
+      - REGION:.spec.location
+      - INFRA:.spec.infrastructure
+      - ClusterReady:{.status.conditions[?(@.type=="ClusterReady")].status}
+      - ClusterStatus:.status.clusterStatus.message|WL
+      - AddonsReady:{.status.conditions[?(@.type=="AddOnsReady")].status}
+      - AddonsReason:{.status.conditions[?(@.type=="AddOnsReady")].reason}

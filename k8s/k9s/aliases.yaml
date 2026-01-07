@@ -1,4 +1,27 @@
 aliases:
+  srens: ns component-name=control-plane
+  sretools-ns: ns /sretools
+  srens-for-product: ns for-product=*
+  sre-sts-prom: sts /prometheus-k8s
+  sre-sec-prom: secret /prometheus
+  sre-sec-promfed: secret /fed
+  sre-cm-promfed: cm /fed
+  crcap: crc ap
+  #crc: crc ap
+  crclogs: deployment cloudrock-controller -n cloudrock-controller
+  cloudrockdeploy: deployment cloudrock-controller -n cloudrock-controller
+  cloudrockpods: pod cloudrock-controller
+  ctx-dp-prep-fr: context ap/api-ap-usge1-dp-01-aabp-p1-openshiftusgov-com\:6443/vyacheslav.malinovskyy@ibm.com
+  ctx-cp-prep-fr: context ap/api-ap-usge1-cp-01-rdib-p1-openshiftusgov-com\:6443/vyacheslav.malinovskyy@ibm.com
+  cmprom: configmaps /prometheus
+  cminstana: configmaps /instana
+  rt: routes
+  podsprom: pods /prometheus
+  pwn: pod app!=nginx
+  polall: policies all
+  roleall: roles.iam.services.k8s.aws all
+  role.iam: roles.iam.services.k8s.aws all
+  bucketall: buckets all
   dp: deployments
   sec: v1/secrets
   jo: jobs
@@ -7,4 +30,3 @@ aliases:
   ro: roles
   rb: rolebindings
   np: networkpolicies
-  #crc: cluster
