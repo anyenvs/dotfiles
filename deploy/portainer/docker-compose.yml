@@ -1,0 +1,230 @@
+## attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion
+#version: '3.8'
+## ------------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: Portainer Repo
+## https://github.com/portainer/portainer/tree/develop/build/linux
+## https://hub.docker.com/r/portainer/portainer/tags
+## ------------------------------------------------------------------------------------------------------------------------------------------------
+## Main Image Name and Dockerfile
+## ------------------------------------------------------------------------------------------------------------------------------------------------
+x-dockerfile: &dockerfile
+  ${DOCKERFILE-Dockerfile}
+  #deploy/docker/Dockerfile.ubi
+  #Dockerfile-awscli.ubi
+  #deploy/portainer/Dockerfile
+x-image: &image
+  ## https://info.linuxserver.io/issues/2023-05-03-homeassistant/
+  portainer/portainer-ce:latest
+x-imageICR: &imageICR
+  icr.io/automation-saas-platform/mcsp-sre/portainer:${TAG:-latest}
+x-appArgs: &appArgs
+  #DIST: debian:bullseye-slim
+  DIST: alpine:edge
+  #DIST: ${DIST-alpine:3.17.9}  ## this only works on armv7l
+  PORT_EXPOSE: 9000/tcp
+  APP_NAME: ${APP_NAME-}
+  ENTRYPOINT: ${ENTRYPOINT-/portainer}
+  SOPS_VERSION: 3.10.1
+  RUNIT_TIMER_CONFD: 300
+## DNS resolve works only with network_mode=host
+x-dns: &dns
+  dns:
+    - 192.168.1.1
+    - 1.1.1.1
+    - 8.8.8.8
+    - 4.4.4.4
+    - 127.0.0.1
+    - 127.0.0.11
+  dns_search:
+    - ${COMPOSE_PROJECT_NAME}.local
+    - dns.podman
+    - example.com
+    - internal.local
+  dns_opt:
+    - rotate
+    - timeout:2
+    - attempts:3
+x-dnsPihole: &dnsPihole
+  - 172.100.0.11
+x-security-opts: &security-opts
+  privileged: true
+  cap_add:
+    - SYS_ADMIN
+    - SYS_TIME
+    - NET_ADMIN
+  #security_opt:
+  #  - seccomp:unconfined
+  #  - label:disable
+  ## https://github.com/just-containers/s6-overlay/issues/397#issuecomment-1030856278
+  tmpfs:
+    - /run:exec,mode=1777,size=65536k
+    - /run/lock
+x-healthcheckProxy: &healthcheckProxy
+  #test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8118/health || exit 1"]
+  #test: ["CMD", "dig", "-p", "$(pihole-FTL --config dns.port)", "+short", "+norecurse", "+retry=0", "@127.0.0.1", "pi.hole", "|| exit 1" ]
+  test: ["CMD", "/bin/echo", "ok || exit 1"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: DEPLOY
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+x-deploy: &deploy
+  replicas: 1
+  update_config:
+    parallelism: 2
+    delay: 10s
+    order: start-first
+  restart_policy:
+    #condition: always
+    #condition: on-failure
+    #max_attempts: 999
+    condition: unless-stopped
+    delay: 5s
+  resources:
+    limits:
+      cpus: '0.5'
+      memory: 512M
+    reservations:
+      cpus: '0.2'
+      memory: 128M
+x-build: &Build
+  context:    ./
+  dockerfile: *dockerfile
+  ## failed to solve: granting entitlement security.insecure is not allowed by build daemon configuration
+  #privileged: true
+  #cap_add: [ NET_RAW ]
+  #cap_add: [ SYS_ADMIN, SYS_TIME ]
+  ## failed to solve: granting entitlement network.host is not allowed by build daemon configuration
+  #network: host
+  args:
+    *appArgs
+  #platforms:     [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
+  #platforms:    [ "linux/arm64","linux/arm/v7" ]
+
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: NETWORKS
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+networks:
+  portainer:
+    external: true
+  #dns:
+  #  ## For overlay networks in swarm mode:
+  #  #driver: overlay
+  #  #attachable: true
+  #  # driver_opts:  # Optional
+  #  #   encrypted: "true"  # Encrypt network traffic
+  #  #   com.docker.network.driver.mtu: "1450"
+  #  #labels:
+  #  #  - "network.scope=swarm"
+  #  #  - "network.purpose=proxy"
+  #  driver: bridge
+  #  ipam:
+  #    config:
+  #      - subnet: 172.50.0.0/24
+  #      #- subnet: 10.10.0.0/16
+  #      #  ip_range: 10.10.10.0/24
+  #      #  gateway: 10.10.10.1
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: VOLUMES
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+volumes:
+  portainer:
+    external: true
+    name: portainer
+x-appVolumes: &appVolumes
+  - type: bind
+    source: /var/run/docker.sock
+    target: /var/run/docker.sock
+    bind:
+      create_host_path: false
+  - type: volume
+    source: portainer
+    target: /data
+    volume:
+      subpath: data/
+  #- ./_resolv.conf:/etc/resolv.conf:ro
+
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+##  MARK: SERVICES  ##
+## https://community.home-assistant.io/t/installing-home-assistant-on-wd-mycloudex2ultra/530270
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+services:
+  ## --------------------------------------------------------------------------------------------------------------------------------------------
+  ##  MARK: PORTAINER SERVICE  ##
+  ## --------------------------------------------------------------------------------------------------------------------------------------------
+  portainer:
+    ## Host mode uses host network directly, ports ignored
+    #network_mode:   host
+    ## Swamp mode overlay network when 2 replicas
+    networks:
+      - portainer
+    #  portainer:
+    #    ### Assign the static IP
+    #    ipv4_address: 172.100.0.11
+    #  dns:
+    #    ### Assign the static IP
+    #    ipv4_address: 172.50.0.11
+    hostname:     ${APP_NAME:-portainer}
+    image:        *image
+    ## Keep platform disabled to avoid build issues
+    #platform:       linux/arm/v7
+    #platform:       linux/arm64
+    #platform:       linux/amd64
+    ports:
+      - 9000:9000/tcp
+      #- 9443:9443/tcp
+      #- 8000:8000/tcp
+    #build:
+    #  context:    ${MNT-./}
+    #  dockerfile: *dockerfile
+    #  args:
+    #    <<: *appArgs
+    #    DNSMASQ_LISTENING: "all"
+    #    TZ: "America/New_York"
+    #    #WEBPASSWORD: "changeme_tbd"
+    #    FTLCONF_LOCAL_IPV4: "172.100.0.11"
+    #    ## Optional: Add static local DNS entries
+    #    #FTLCONF_dns_hosts: |
+    #    #  172.100.0.2 haproxy.local
+    #    #  172.100.0.20 proxy-1.local
+    #    #  172.100.0.21 proxy-2.local
+    #    #ENTRYPOINT:           ${ENTRYPOINT-start.sh}
+    #    S6_OVERLAY_VERSION: "${S6_OVERLAY_VERSION-v3.1.1.2}"
+    #  #platforms:
+    #    #- linux/arm/v7
+    #    #- linux/arm64
+    #    #- linux/amd64
+    restart: always
+    #restart: unless-stopped
+    ## DNS resolve works only with network_mode=host
+    <<: *dns
+    deploy:
+      <<: *deploy
+    # To avoid issue with named volume and mounting time
+    #<<: *security-opts
+    #privileged: true
+    #cap_add: [ SYS_ADMIN, SYS_TIME, NET_ADMIN ]
+    env_file: stack.env
+    environment:
+      - HOME=/root
+      #- PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    #entrypoint: sh -c '/app/entrypoint.sh'
+    #entrypoint: runsvdir /etc/service
+    #entrypoint: ${ENTRYPOINT-/portainer}
+    volumes: *appVolumes
+  ## #############################################################################################
+  ## Sidecar Service
+  ## #############################################################################################
+  #hass-configurator:
+  #  ## Host mode uses host network directly, ports ignored
+  #  network_mode:   host
+  #  container_name: hassconf
+  #  image: causticlab/hass-configurator-docker
+  #  restart: unless-stopped
+  #  ports:
+  #    - 3218:3218/tcp
+  #  volumes: *appVolumes
+  #    #- Configurator:/config
+  #    #- homeassistant_data:/hass-config
