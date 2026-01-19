@@ -81,22 +81,29 @@ frontend forward_proxy
 backend privoxy_http
   balance roundrobin
   mode tcp ##http
-  #server tor tor:{{ getv "/port/expose/http" "8118" }}
-  server privoxy_8118 127.0.0.1:{{ getv "/port/expose/http" "8118" }} check init-addr last,libc,none
-  server proxy-proxy-1:8118 proxy-proxy-1:8118 check init-addr last,libc,none
-  server proxy-proxy-2:8118 proxy-proxy-2:8118 check init-addr last,libc,none
-  server proxy-proxy-1:8119 proxy-proxy-1:8119 check init-addr last,libc,none
-  server proxy-proxy-2:8119 proxy-proxy-2:8119 check init-addr last,libc,none
-
+  {{- if eq (getv "/tor/exitnodes" "") "ua" }}
+  server privoxy-ua_{{ getv "/port/expose/http" "8118" }} 127.0.0.1:{{ getv "/port/expose/http" "8118" }} check init-addr last,libc,none
+  server privoxy-ua:{{ getv "/port/expose/http" "8118" }} proxy-proxy-ua:{{ getv "/port/expose/http" "8118" }} check resolvers docker_resolver init-addr last,libc,none
+  {{- else }}
+  server privoxy_{{ getv "/port/expose/http" "8118" }} 127.0.0.1:{{ getv "/port/expose/http" "8118" }} check init-addr last,libc,none
+  server proxy-proxy-1:{{ getv "/port/expose/http" "8118" }} proxy-proxy-1:{{ getv "/port/expose/http" "8118" }} check resolvers docker_resolver init-addr last,libc,none
+  server proxy-proxy-2:{{ getv "/port/expose/http" "8118" }} proxy-proxy-2:{{ getv "/port/expose/http" "8118" }} check resolvers docker_resolver init-addr last,libc,none
+  #server proxy-proxy-1:8119 proxy-proxy-1:8119 check init-addr last,libc,none
+  #server proxy-proxy-2:8119 proxy-proxy-2:8119 check init-addr last,libc,none
+  {{- end }}
 
 backend tor_socks
   balance roundrobin
   mode tcp
-  server tor_9050 127.0.0.1:{{ getv "/port/expose/socks" "9050" }} check init-addr last,libc,none
-  server proxy-proxy-1:9050 proxy-proxy-1:9050 check resolvers docker_resolver init-addr last,libc,none
-  server proxy-proxy-2:9050 proxy-proxy-2:9050 check resolvers docker_resolver init-addr last,libc,none
-  server proxy-proxy-1:9051 proxy-proxy-1:9051 check resolvers docker_resolver init-addr last,libc,none
-  server proxy-proxy-2:9051 proxy-proxy-2:9051 check resolvers docker_resolver init-addr last,libc,none
+  {{- if eq (getv "/tor/exitnodes" "") "ua" }}
+  server proxy-ua_{{ getv "/port/expose/socks" "9050" }} 127.0.0.1:{{ getv "/port/expose/socks" "9050" }} check init-addr last,libc,none
+  server proxy-ua:{{ getv "/port/expose/socks" "9050" }} proxy-proxy-ua:{{ getv "/port/expose/socks" "9050" }} check resolvers docker_resolver init-addr last,libc,none
+  {{- else }}
+  server tor_{{ getv "/port/expose/socks" "9050" }} 127.0.0.1:{{ getv "/port/expose/socks" "9050" }} check init-addr last,libc,none
+  server proxy-proxy-1:{{ getv "/port/expose/socks" "9050" }} proxy-proxy-1:{{ getv "/port/expose/socks" "9050" }} check resolvers docker_resolver init-addr last,libc,none
+  server proxy-proxy-2:{{ getv "/port/expose/socks" "9050" }} proxy-proxy-2:{{ getv "/port/expose/socks" "9050" }} check resolvers docker_resolver init-addr last,libc,none
+  #server proxy-proxy-1:9051 proxy-proxy-1:9051 check resolvers docker_resolver init-addr last,libc,none
+  #server proxy-proxy-2:9051 proxy-proxy-2:9051 check resolvers docker_resolver init-addr last,libc,none
   #server 127.0.0.1:9052 127.0.0.1:9052 check resolvers docker_resolver init-addr none
   #server 127.0.0.1:9053 127.0.0.1:9053 check resolvers docker_resolver init-addr none
   #server 127.0.0.1:9054 127.0.0.1:9054 check resolvers docker_resolver init-addr none
@@ -106,6 +113,7 @@ backend tor_socks
   #server 127.0.0.1:9058 127.0.0.1:9058 check resolvers docker_resolver init-addr none
   #server 127.0.0.1:9059 127.0.0.1:9059 check resolvers docker_resolver init-addr none
   #server 127.0.0.1:9060 127.0.0.1:9060 check resolvers docker_resolver init-addr none
+  {{- end }}
 
 backend stats_backend
   mode  http

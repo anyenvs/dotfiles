@@ -33,8 +33,7 @@
 #version: '3.9'
 x-dockerfile: &dockerfile
   ${MNT:-proxy}/Dockerfile
-  #${MNT:-proxy}/Dockerfile.armv7
-x-dockerfile-armv7: &dockerfile
+x-dockerfile-armv7: &dockerfileARMv7
   ${MNT:-proxy}/Dockerfile.armv7
 x-image: &image
   proxy:${DIST_TAG:-alpine-edge}
@@ -52,7 +51,14 @@ x-imageConfd: &imageConfd
   confd:latest
 x-dockerfileConfd: &dockerfileConfd
   ${MNT:-.}/Dockerfile.confd-alpine
-## Arguments
+  #${MNT:-confd}/Dockerfile.confd-alpine
+x-imagePihole: &imagePihole
+  pihole:latest
+x-dockerfilePihole: &dockerfilePihole
+  ${MNT:-.}/Dockerfile.pihole
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: Arguments
+## ----------------------------------------------------------------------------------------------------------------------------------------------
 x-monorepoArgs: &monorepoArgs
   MNT: ${MNT:-.}
   #DIST: debian:bullseye-slim
@@ -61,7 +67,7 @@ x-monorepoArgs: &monorepoArgs
   ## WDCLOUD armv7 works only with alpine:3.17
   ## ######################################################################
   #DIST: arm32v7/alpine:edge
-  #DIST: alpine:3.17
+  #DIST: alpine:3.17  ## this only works on armv7l
   EXPOSE: 8118 9050
   PORT_EXPOSE_SOCKS: 9050
   PORT_EXPOSE_HTTP: 8118
@@ -75,23 +81,15 @@ x-monorepoArgs: &monorepoArgs
   CONFD_DEBUG: Y29uZmQgLW9uZXRpbWUgLWJhY2tlbmQgZW52IC1sb2ctbGV2ZWwgZGVidWcK
   CONFD_BACKEND: env
   CONFD_LOG_LEVEL: info
-x-monorepoVolumes: &monorepoVolumes
-  #- ..:/opt/repos
-  #- .config/docker-config.json:/root/.docker/docker-config.json
-  #- .config/kube-config.yml:/root/.kube/config
-  #### local config mappings
-  #- .config/.bash_history:/root/.bash_history
-  #- ${MNT}${HOME}/work/repos:/opt/repos
-  - /opt/repos:/opt/repos
-  - ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/docker-config.json:/root/.docker/docker-config.json
-  - ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/kube-config.yml:/root/.kube/config
-  - ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/gitconfig:/root/.gitconfig
-  - ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/gnupg:/root/.gnupg
-  - ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/.bash_history:/root/.bash_history
 x-dns: &dns
+  #- 172.100.0.11
+  - 127.0.0.11
   - 192.168.1.1
+  - 1.1.1.1
   - 8.8.8.8
   - 4.4.4.4
+x-dnsPihole: &dnsPihole
+  - 172.100.0.10
 x-security-opts: &security-opts
   privileged: true
   cap_add:
@@ -100,9 +98,38 @@ x-security-opts: &security-opts
   #security_opt:
   #  - seccomp=unconfined
   #  - label=disable
+  ## https://github.com/just-containers/s6-overlay/issues/397#issuecomment-1030856278
   tmpfs:
-    - /run
+    - /run:exec,mode=1777,size=65536k
     - /run/lock
+x-healthcheckProxy: &healthcheckProxy
+  test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8118/health || exit 1"]
+  #test: ["CMD", "/bin/echo", "ok || exit 1"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: DEPLOY
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+x-deploy: &deploy
+  replicas: 2
+  update_config:
+    parallelism: 2
+    delay: 10s
+    order: start-first
+  restart_policy:
+    condition: always
+    #condition: on-failure
+    #max_attempts: 999
+    delay: 5s
+  resources:
+    limits:
+      cpus: '0.5'
+      memory: 512M
+    reservations:
+      cpus: '0.2'
+      memory: 128M
 x-build: &Build
   context:    ./
   dockerfile: *dockerfile
@@ -116,62 +143,71 @@ x-build: &Build
     *monorepoArgs
   #platforms:     [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
   #platforms:    [ "linux/arm64","linux/arm/v7" ]
-x-healthcheckProxy: &healthcheckProxy
-  test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8118/health || exit 1"]
-  interval: 30s
-  timeout: 10s
-  retries: 3
-  start_period: 40s
-x-deploy: &deploy
-  replicas: 2
-  update_config:
-    parallelism: 2
-    delay: 10s
-    order: start-first
-  #restart_policy:
-  #  condition: "Always"
-  restart_policy:
-    condition: on-failure
-    delay: 5s
-    #max_attempts: 999
-  resources:
-    limits:
-      cpus: '1'
-      memory: 1024M
-    reservations:
-      cpus: '0.2'
-      memory: 128M
 
 ## ----------------------------------------------------------------------------------------------------------------------------------------------
 ## MARK: NETWORKS
+##   sudo docker network create --driver bridge proxy_net
 ## ----------------------------------------------------------------------------------------------------------------------------------------------
-#networks:
-#  proxynet:
-#    #driver: bridge
-#    ## For overlay networks in swarm mode:
-#    driver: overlay
-#    attachable: true
-#    # driver_opts:  # Optional
-#    #   encrypted: "true"  # Encrypt network traffic
-#    #   com.docker.network.driver.mtu: "1450"
-#    #ipam:
-#      #config:
-#        #- subnet: 10.1.0.0/24
-#        #  gateway: 10.1.0.1
-#        #- subnet: 10.10.0.0/16
-#        #  ip_range: 10.10.10.0/24
-#        #  gateway: 10.10.10.1
-#    labels:
-#      - "network.scope=swarm"
-#      - "network.purpose=proxy"
+networks:
+  #pihole_net:
+  #  external: true
+  proxy_net:
+    external: true
+  #net:
+  #  ## For overlay networks in swarm mode:
+  #  #driver: overlay
+  #  #attachable: true
+  #  # driver_opts:  # Optional
+  #  #   encrypted: "true"  # Encrypt network traffic
+  #  #   com.docker.network.driver.mtu: "1450"
+  #  #labels:
+  #  #  - "network.scope=swarm"
+  #  #  - "network.purpose=proxy"
+  #  driver: bridge
+  #  ipam:
+  #    config:
+  #      - subnet: 172.100.0.0/24
+  #      #- subnet: 10.10.0.0/16
+  #      #  ip_range: 10.10.10.0/24
+  #      #  gateway: 10.10.10.1
 
 ## ----------------------------------------------------------------------------------------------------------------------------------------------
 ## MARK: VOLUMES
 ## ----------------------------------------------------------------------------------------------------------------------------------------------
-#volumes:
-#  proxy_data:
-#    external: true
-#    name: proxy_data
+volumes:
+  proxy_data:
+    external: true
+    name: proxy_data
+x-monorepoVolumes: &monorepoVolumes
+  #- ..:/opt/repos
+  #- .config/docker-config.json:/root/.docker/docker-config.json
+  #- .config/kube-config.yml:/root/.kube/config
+  #### local config mappings
+  #- .config/.bash_history:/root/.bash_history
+  #- ${MNT}${HOME}/work/repos:/opt/repos
+  #- /opt/repos:/opt/repos
+  #- ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/docker-config.json:/root/.docker/docker-config.json
+  #- ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/kube-config.yml:/root/.kube/config
+  #- ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/gitconfig:/root/.gitconfig
+  #- ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/gnupg:/root/.gnupg
+  #- ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/.bash_history:/root/.bash_history
+  - /mnt/HD/HD_a2/DATA_1/opt/repos:/opt/repos
+  #- /mnt/HD/HD_a2/DATA_1/opt/repos/_vscode-server/config:/config
+  - proxy_data:/config/proxy_data
+x-localVolumes: &localVolumes
+  #- ..:/opt/repos
+  #- .config/docker-config.json:/root/.docker/docker-config.json
+  #- .config/kube-config.yml:/root/.kube/config
+  #### local config mappings
+  #- .config/.bash_history:/root/.bash_history
+  #- ${MNT}${HOME}/work/repos:/opt/repos
+  - /opt/repos:/opt/repos
+  - ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/docker-config.json:/root/.docker/docker-config.json
+  - ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/kube-config.yml:/root/.kube/config
+  - ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/gitconfig:/root/.gitconfig
+  - ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/gnupg:/root/.gnupg
+  - ${DEVCONTAINER_PATH:-/opt/repos/.devcontainer}/.config/.bash_history:/root/.bash_history
+
 
 ## ----------------------------------------------------------------------------------------------------------------------------------------------
 ##  MARK: SERVICES  ##
@@ -181,25 +217,27 @@ services:
   ##  MARK: PROXY SERVICE  ##
   ## --------------------------------------------------------------------------------------------------------------------------------------------
   proxy:
-    network_mode:   host
+    ## Host mode uses host network directly, ports ignored
+    #network_mode:   host
+    ## Swamp mode overlay network when 2 replicas
+    networks:
+      #- net ## networks defined above
+      - proxy_net ## reference networks manually created
     hostname:       proxy
+    ## cant set container_name and proxy as container name must be unique: invalid compose project
     #container_name: proxy
     image:          *image
     ports:
+      ## Maps host 8118→rep1, 8119→rep2 → container 8118
       - 9050-9051:9050
-      ## Maps host 8118→rep1, 81191→rep2 → container 8118
       - 8118-8119:8118
       - 8088-8089:8088
     #platform:       linux/arm/v7
-    #platform:       linux/amd64
     #platform:       linux/arm64
+    #platform:       linux/amd64
     #platform:       linux/arm/v7,linux/amd64,linux/arm64
     build:
       <<: *Build
-      platforms:
-        #- linux/arm/v7
-        - linux/arm64
-        - linux/amd64
       #platforms:    [ "linux/amd64","linux/arm64","linux/arm/v7" ]
       #platforms:    [ "linux/arm64","linux/arm/v7" ]
       #platforms:
@@ -210,20 +248,34 @@ services:
       #  # - linux/armv7 ## no match for platform in manifest: not found
       #  # - linux/ppc64le
       #  # - linux/s390x
+    restart: always
+    #restart: unless-stopped
     deploy:
       <<: *deploy
     # To avoid issue with named volume and mounting time
     <<: *security-opts
     #cap_add: [ SYS_ADMIN, SYS_TIME ]
     dns: *dns
-    restart: always
     env_file: stack.env
     environment:
+      ## https://docs.docker.com/reference/cli/docker/service/create/#create-services-using-templates
+      REPLICA_ID: "{{.Task.Slot}}"
+      REPLICA_NAME: "{{.Task.Name}}"
       ## https://docs.docker.com/compose/environment-variables/env-file/
       ## https://docs.docker.com/compose/environment-variables/env-file/
       HOME_USER: ${HOME}
       #ENABLE_IPV6: true
       TZ: America/New_York
+      #RUNIT_SV_MAIN:        ${RUNIT_SV_MAIN-}
+      #RUNIT_SV_RESTART:     ${RUNIT_SV_RESTART-tor}
+      #RUNIT_TIMER_CONFD:    ${RUNIT_TIMER_CONFD-}
+      #RUNIT_TIMER_PROXY:    ${RUNIT_TIMER_PROXY-}
+      #RUNIT_TIMER_RESTART:  ${RUNIT_TIMER_RESTART-}
+      #PORT_EXPOSE_SOCKS:    ${PORT_EXPOSE_SOCKS-}
+      #PORT_EXPOSE_HTTP:     ${PORT_EXPOSE_HTTP-}
+      #PORT_EXPOSE_DNS:      ${PORT_EXPOSE_DNS-}
+      #TOR_EXCLUDENODES:     ${TOR_EXCLUDENODES-}
+      #TOR_EXCLUDEEXITNODES: ${TOR_EXCLUDEEXITNODES-}
       ## COUNTRY_CODE={ua} docker-compose config proxy
       ## COUNTRY_CODE={fr},{pt docker-compose config proxy
       TOR_EXITNODES:        ${COUNTRY_CODE-{ua}}
@@ -251,6 +303,7 @@ services:
     #entrypoint:   sleep 9999d
     entrypoint:   runsvdir /etc/service
     volumes: *monorepoVolumes
+    #volumes: *localVolumes
 
   ## ###################################################################### ##
   ##  MARK: PROXY TOOLS
@@ -305,7 +358,12 @@ services:
   ##  MARK: CONFD
   ## ###################################################################### ##
   confd:
-    network_mode:   host
+    #network_mode:   host
+    networks:
+      - proxy_net
+      #net:
+        ## Assign the static IP
+        #ipv4_address: 172.100.0.100
     hostname:       confd
     container_name: confd
     image:          *imageConfd
@@ -338,6 +396,7 @@ services:
       #  # - linux/ppc64le
       #  # - linux/s390x
     dns: *dns
+    #dns: *dnsPihole
     environment:
       ## https://docs.docker.com/compose/environment-variables/env-file/
       ## https://docs.docker.com/compose/environment-variables/env-file/

@@ -85,10 +85,10 @@ RUN set -xe ;\
     #apk add --update privoxy tor@testing runit@testing openrc ;\
     #echo -e 'http://dl-cdn.alpinelinux.org/alpine/edge/main\nhttp://dl-cdn.alpinelinux.org/alpine/edge/testing\nhttp://dl-cdn.alpinelinux.org/alpine/edge/community' > /etc/apk/repositories ;\
     echo "$VERSION_ID" | grep -q "3.17" || echo -e 'http://dl-cdn.alpinelinux.org/alpine/edge/main\nhttp://dl-cdn.alpinelinux.org/alpine/edge/testing\nhttp://dl-cdn.alpinelinux.org/alpine/edge/community' > /etc/apk/repositories ;\
-    echo "$VERSION_ID" | grep -q "3.17" || apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community tor runit  ;\
-    echo "$VERSION_ID" | grep -q "3.17" || apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main privoxy openrc haproxy ;\
-    echo "$VERSION_ID" | grep -q "3.17" && apk add --repository=http://dl-cdn.alpinelinux.org/alpine/v3.17/community tor runit ;\
-    echo "$VERSION_ID" | grep -q "3.17" && apk add --repository=http://dl-cdn.alpinelinux.org/alpine/v3.17/main privoxy openrc haproxy ;\
+    echo "$VERSION_ID" | grep -q "3.17" || apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community tor runit           ;\
+    echo "$VERSION_ID" | grep -q "3.17" || apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main privoxy openrc haproxy   ;\
+    echo "$VERSION_ID" | grep -q "3.17" && apk add --repository=http://dl-cdn.alpinelinux.org/alpine/v3.17/community tor runit          ;\
+    echo "$VERSION_ID" | grep -q "3.17" && apk add --repository=http://dl-cdn.alpinelinux.org/alpine/v3.17/main privoxy openrc haproxy  ;\
     ##
     ## Additional packages
     apk add --update ca-certificates vim curl bash jq whois wget &&\

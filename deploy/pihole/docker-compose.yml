@@ -20,30 +20,44 @@ x-imageICR: &imageICR
   icr.io/automation-saas-platform/mcsp-sre/pihole:${TAG:-latest}
 x-appArgs: &appArgs
   #DIST: debian:bullseye-slim
-  DIST: alpine:edge
+  #DIST: alpine:edge
+  DIST: ${DIST-alpine:3.17.9}  ## this only works on armv7l
   PORT_EXPOSE: 8000
   APP_NAME: pihole
   ENTRYPOINT: ${ENTRYPOINT-start.sh}
   SOPS_VERSION: 3.10.1
   RUNIT_TIMER_CONFD: 300
+## DNS resolve works only with network_mode=host
 x-dns: &dns
-  - 127.0.0.1
-  - 192.168.1.1
-  - 1.1.1.1
-  - 8.8.8.8
-  - 4.4.4.4
+  dns:
+    #- 127.0.0.11
+    - 192.168.1.1
+    - 1.1.1.1
+    - 8.8.8.8
+    - 4.4.4.4
+  dns_search:
+    - ${COMPOSE_PROJECT_NAME}.local
+    - dns.podman
+    - example.com
+    - internal.local
+  dns_opt:
+    - timeout:2
+    - attempts:3
 x-dnsPihole: &dnsPihole
-  - 172.100.0.10
+  - 172.100.0.11
 x-security-opts: &security-opts
   privileged: true
   cap_add:
     - SYS_ADMIN
+    - NET_ADMIN
+    - DNS_ADMIN
     - SYS_TIME
   #security_opt:
   #  - seccomp:unconfined
   #  - label:disable
+  ## https://github.com/just-containers/s6-overlay/issues/397#issuecomment-1030856278
   tmpfs:
-    - /run
+    - /run:exec,mode=1777,size=65536k
     - /run/lock
 x-healthcheckProxy: &healthcheckProxy
   #test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8118/health || exit 1"]
@@ -62,12 +76,11 @@ x-deploy: &deploy
     parallelism: 2
     delay: 10s
     order: start-first
-  #restart_policy:
-  #  condition: "Always"
   restart_policy:
+    #condition: "Always"
     condition: on-failure
     delay: 5s
-    #max_attempts: 999
+    max_attempts: 999
   resources:
     limits:
       cpus: '0.5'
@@ -96,7 +109,6 @@ networks:
   proxy_net:
     external: true
   dns:
-    #driver: bridge
     ## For overlay networks in swarm mode:
     #driver: overlay
     #attachable: true
@@ -106,13 +118,13 @@ networks:
     #labels:
     #  - "network.scope=swarm"
     #  - "network.purpose=proxy"
+    driver: bridge
     ipam:
       config:
         - subnet: 172.50.0.0/24
         #- subnet: 10.10.0.0/16
         #  ip_range: 10.10.10.0/24
         #  gateway: 10.10.10.1
-
 ## ----------------------------------------------------------------------------------------------------------------------------------------------
 ## MARK: VOLUMES
 ## ----------------------------------------------------------------------------------------------------------------------------------------------
@@ -122,7 +134,12 @@ volumes:
     name: proxy_data
 x-appVolumes: &appVolumes
   #- .:./
-  - proxy_data:/config/pihole_data
+  - ./resolv.conf:/etc/resolv.conf:ro
+  - type: volume
+    target: /config
+    source: proxy_data
+    volume:
+      subpath: /pihole_data
 
 ## ----------------------------------------------------------------------------------------------------------------------------------------------
 ##  MARK: SERVICES  ##
@@ -130,11 +147,13 @@ x-appVolumes: &appVolumes
 ## https://github.com/pi-hole/docker-pi-hole/tree/master/src
 ## ----------------------------------------------------------------------------------------------------------------------------------------------
 services:
-  ##
-  ## Go pihole
-  ##
+  ## --------------------------------------------------------------------------------------------------------------------------------------------
+  ##  MARK: PIHOLE SERVICE  ##
+  ## --------------------------------------------------------------------------------------------------------------------------------------------
   pihole:
-    #network_mode: host
+    ## Host mode uses host network directly, ports ignored
+    #network_mode:   host
+    ## Swamp mode overlay network when 2 replicas
     networks:
       proxy_net:
         ### Assign the static IP
@@ -148,25 +167,46 @@ services:
     #platform:       linux/arm/v7
     #platform:       linux/arm64
     #platform:       linux/amd64
+    ports:
+      - 53:53/tcp
+      - 53:53/udp
+      - 8060:80/tcp
+      - 8444:443/tcp
     build:
       context:    ${MNT-./}
       dockerfile: *dockerfile
       args:
-        *appArgs
+        <<: *appArgs
+        DNSMASQ_LISTENING: "all"
+        TZ: "America/New_York"
+        #WEBPASSWORD: "changeme_tbd"
+        FTLCONF_LOCAL_IPV4: "172.100.0.11"
+        ## Optional: Add static local DNS entries
+        #FTLCONF_dns_hosts: |
+        #  172.100.0.2 haproxy.local
+        #  172.100.0.20 proxy-1.local
+        #  172.100.0.21 proxy-2.local
+        #ENTRYPOINT:           ${ENTRYPOINT-start.sh}
+        S6_OVERLAY_VERSION: "${S6_OVERLAY_VERSION-v3.1.1.2}"
       #platforms:
         #- linux/arm/v7
         #- linux/arm64
         #- linux/amd64
-    restart: always
+    #restart: always
+    restart: unless-stopped
+    ## DNS resolve works only with network_mode=host
+    <<: *dns
     deploy:
       <<: *deploy
     # To avoid issue with named volume and mounting time
-    <<: *security-opts
-    #cap_add: [ SYS_ADMIN, SYS_TIME ]
-    dns: *dns
+    #<<: *security-opts
+    privileged: true
+    cap_add: [ SYS_ADMIN, SYS_TIME, NET_ADMIN, DNS_ADMIN ]
+    env_file: stack.env
     environment:
       - HOME=/root
     #entrypoint: sh -c '/app/entrypoint.sh'
     #entrypoint: runsvdir /etc/service
-    entrypoint: ${ENTRYPOINT-start.sh}
+    #entrypoint: ${ENTRYPOINT-start.sh}
+    entrypoint: ${ENTRYPOINT-/s6-init}
     volumes: *appVolumes

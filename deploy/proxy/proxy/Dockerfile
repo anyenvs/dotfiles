@@ -3,7 +3,7 @@ ARG DIST=alpine:edge
 ## ######################################################################
 ## STAGE_1: Build Confd
 ## ######################################################################
-FROM golang:1.15-alpine as CONFDBUILD
+FROM golang:1.15-alpine AS confdbuild
 
 ARG APP_NAME=${APP_NAME:-confd}
 ARG ENTRYPOINT='deploy/entrypoint.sh'
@@ -26,59 +26,69 @@ RUN set -xe &&\
     rm -rf /tmp/v${CONFD_VERSION}.tar.gz
 
 ARG DIST=alpine:edge
-FROM confd:latest as CONFDBIN
+FROM confd:latest AS confdbin
 
-## ######################################################################
+## #################################################################################################################
 ## STAGE_2: Build Proxy
-## docker-compose -f ./docker-compose-armv7l.yml build proxy --check
-## docker-compose -f ./docker-compose.yml build proxy --check
-## ######################################################################
+##  ( cd ~/_dotfiles/deploy/proxy ; docker-compose -f ./docker-compose-armv7l.yml build proxy --check )
+##  ( cd ~/_dotfiles/deploy/proxy ; docker-compose -f ./docker-compose.yml build proxy --check )
+## #################################################################################################################
 ARG DIST=alpine:edge
 FROM ${DIST}
 
 ARG ALPINE=${ALPINE}
 ARG EXPOSE="8118 9050"
+ARG HAPROXY_PORT_EXPOSE_HTTP
 ARG PORT_EXPOSE_HTTP
 ARG PORT_EXPOSE_SOCKS
 ARG PORT_EXPOSE_DNS
+ARG TORRC
 ARG TOR_EXITNODES
+ARG TOR_EXCLUDENODES
+ARG TOR_EXCLUDEEXITNODES
 ARG CONFD_LOG_LEVEL
 ARG CONFD_BACKEND
 ARG CONFD_DEBUG
+ARG RUNIT_SV_MAIN
+ARG RUNIT_SV_RESTART
+ARG RUNIT_TIMER_PROXY
+ARG RUNIT_TIMER_RESTART
+ARG RUNIT_TIMER_CONFD
 EXPOSE ${PORT_EXPOSE_HTTP} ${PORT_EXPOSE_SOCKS}
 
 ENV PORT_EXPOSE_HTTP=${PORT_EXPOSE_HTTP} \
     PORT_EXPOSE_SOCKS=${PORT_EXPOSE_SOCKS} \
     PORT_EXPOSE_DNS=${PORT_EXPOSE_DNS} \
-    #TOR_EXITNODES=${TOR_EXITNODES} \ ## don need to set status ENV via docker-compose
+    #TOR_EXITNODES=${TOR_EXITNODES} \ ## dont need to set status ENV via docker-compose
     CONFD_LOG_LEVEL=${CONFD_LOG_LEVEL} \
     CONFD_BACKEND=${CONFD_BACKEND} \
     CONFD_DEBUG=${CONFD_DEBUG}
 
-## ######################################################################
+## #################################################################################################################
 ## STAGE_2_1: Create Archive with Proxy Configs
-## tar cf proxy-configs.tar -C proxy/service tor privoxy runit-timer
-## tar cf proxy.tar -C proxy/service tor privoxy runit-timer
-## ######################################################################
+##  ( cd ~/_dotfiles/deploy/proxy ; tar cf proxy-configs.tar -C proxy/service tor privoxy confd runit-sv-restart )
+##  ( cd ~/_dotfiles/deploy/proxy ; tar cf proxy.tar -C proxy/service tor privoxy confd runit-sv-restart )
+## #################################################################################################################
 #ADD proxy/service/tor/torrc /etc/tor/torrc
 #ADD proxy/service/tor proxy/service/privoxy  /etc/service/
-ADD proxy.tar /etc/service/
+ADD proxy-configs.tar /etc/service/
 ADD proxy/service/assets/root/ /
+ADD proxy/bashrc /root/.bashrc
 
-COPY --from=CONFDBUILD /go/bin/confd /usr/bin/confd
+COPY --from=confdbuild /go/bin/confd /usr/bin/confd
 
 ## DIST=alpine:edge PORT_EXPOSE_SOCKS=9050 PORT_EXPOSE_HTTP=8118 PORT_EXPOSE_DNS=127.0.0.1:9053 CONFD_BACKEND=env CONFD_DEBUG=Y29uZmQgLW9uZXRpbWUgLWJhY2tlbmQgZW52IC1sb2ctbGV2ZWwgZGVidWcK CONFD_LOG_LEVEL=info docker build --build-arg DIST=alpine:edge --network host -t proxy -f proxy/Dockerfile .
 RUN set -xe ;\
     . /etc/os-release &&\
     _OS=$(uname -s | tr '[:upper:]' '[:lower:]') && _ARCH=$(uname -m | tr '[:upper:]' '[:lower:]' | sed 's/x86_64/amd64/g; s/armv7.*/armv7/g; s/aarch64/arm64/g' ) &&\
-    #echo '@testing http://nl.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositories &&\
-    #apk add --update privoxy tor@testing runit@testing openrc &&\
-    #echo -e 'http://dl-cdn.alpinelinux.org/alpine/edge/main\nhttp://dl-cdn.alpinelinux.org/alpine/edge/testing\nhttp://dl-cdn.alpinelinux.org/alpine/edge/community' > /etc/apk/repositories &&\
-    echo "$VERSION_ID" | grep -q "3.17" || echo -e 'http://dl-cdn.alpinelinux.org/alpine/edge/main\nhttp://dl-cdn.alpinelinux.org/alpine/edge/testing\nhttp://dl-cdn.alpinelinux.org/alpine/edge/community' > /etc/apk/repositories &&\
-    echo "$VERSION_ID" | grep -q "3.17" || apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community tor runit &&\
-    echo "$VERSION_ID" | grep -q "3.17" || apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main privoxy openrc &&\
-    echo "$VERSION_ID" | grep -q "3.17" && apk add --repository=http://dl-cdn.alpinelinux.org/alpine/v3.17/community tor runit &&\
-    echo "$VERSION_ID" | grep -q "3.17" && apk add --repository=http://dl-cdn.alpinelinux.org/alpine/v3.17/main privoxy openrc &&\
+    #echo '@testing http://nl.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositories ;\
+    #apk add --update privoxy tor@testing runit@testing openrc ;\
+    #echo -e 'http://dl-cdn.alpinelinux.org/alpine/edge/main\nhttp://dl-cdn.alpinelinux.org/alpine/edge/testing\nhttp://dl-cdn.alpinelinux.org/alpine/edge/community' > /etc/apk/repositories ;\
+    echo "$VERSION_ID" | grep -q "3.17" || echo -e 'http://dl-cdn.alpinelinux.org/alpine/edge/main\nhttp://dl-cdn.alpinelinux.org/alpine/edge/testing\nhttp://dl-cdn.alpinelinux.org/alpine/edge/community' > /etc/apk/repositories ;\
+    echo "$VERSION_ID" | grep -q "3.17" || apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community tor runit           ;\
+    echo "$VERSION_ID" | grep -q "3.17" || apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main privoxy openrc haproxy   ;\
+    echo "$VERSION_ID" | grep -q "3.17" && apk add --repository=http://dl-cdn.alpinelinux.org/alpine/v3.17/community tor runit          ;\
+    echo "$VERSION_ID" | grep -q "3.17" && apk add --repository=http://dl-cdn.alpinelinux.org/alpine/v3.17/main privoxy openrc haproxy  ;\
     ##
     ## Additional packages
     apk add --update ca-certificates vim curl bash jq whois wget &&\
@@ -108,8 +118,11 @@ RUN set -xe ;\
     ##
     ## Tor script
     ##
-    chmod +x /etc/service/privoxy/run /etc/service/tor/run /etc/service/*/run || exit $? ;\
-    mkdir -pv /etc/service/haproxy && touch /etc/service/haproxy/down || exit $? ;
+    chmod +x /etc/service/privoxy/run /etc/service/tor/run /etc/service/*/run /etc/service/*/finish /etc/service/*/check /etc/service/*/log*/run || true ;\
+        ## Disable haproxy by default
+    #mkdir -pv /etc/service/haproxy && touch /etc/service/haproxy/down || exit $? ;\
+    test -d /etc/service/confd/log.1 && mv -fv /etc/service/confd/log.1 /etc/service/confd/log ;\
+    test -f /etc/service/confd/log*/down && rm -fv /etc/service/confd/log*/down ;
 
 #RUN chmod +x /etc/service/privoxy/run /etc/service/tor/run
 

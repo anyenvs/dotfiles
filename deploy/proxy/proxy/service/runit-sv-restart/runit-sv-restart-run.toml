@@ -1,5 +1,5 @@
 [template]
-src   = "run.tmpl"
+src   = "runit-sv-restart-run.tmpl"
 dest  = "/etc/service/runit-sv-restart/runit"
 #owner = "app"
 #group = "app"
