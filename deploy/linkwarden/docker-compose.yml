@@ -1,0 +1,145 @@
+## attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion
+#version: '3.8'
+## ------------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: LINKWARDEN Repo
+##  https://docs.linkwarden.app/self-hosting/installation
+## ------------------------------------------------------------------------------------------------------------------------------------------------
+## Main Image Name and Dockerfile
+## ------------------------------------------------------------------------------------------------------------------------------------------------
+x-dockerfile: &dockerfile
+  ${DOCKERFILE-Dockerfile}
+x-image: &image
+  linkwarden:latest
+x-appArgs: &appArgs
+  #DIST: debian:bullseye-slim
+  DIST: ${DIST-alpine:edge}
+  #DIST: ${DIST-alpine:3.17.9}  ## this only works on armv7l
+  APP_NAME: pihole
+  #ENTRYPOINT: ${ENTRYPOINT-start.sh}
+  SOPS_VERSION: 3.10.1
+  RUNIT_TIMER_CONFD: 300
+  #security_opt:
+  #  - seccomp:unconfined
+  #  - label:disable
+  ## https://github.com/just-containers/s6-overlay/issues/397#issuecomment-1030856278
+  tmpfs:
+    - /run:exec,mode=1777,size=65536k
+    - /run/lock
+x-healthcheckProxy: &healthcheckProxy
+  #test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8118/health || exit 1"]
+  #test: ["CMD", "dig", "-p", "$(pihole-FTL --config dns.port)", "+short", "+norecurse", "+retry=0", "@127.0.0.1", "pi.hole", "|| exit 1" ]
+  test: ["CMD", "/bin/echo", "ok || exit 1"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: DEPLOY
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+x-deploy: &deploy
+  replicas: 1
+  update_config:
+    parallelism: 2
+    delay: 10s
+    order: start-first
+  restart_policy:
+    #condition: always
+    condition: on-failure
+    delay: 5s
+    max_attempts: 999
+  resources:
+    limits:
+      cpus: '0.5'
+      memory: 512M
+    reservations:
+      cpus: '0.2'
+      memory: 128M
+x-build: &Build
+  context:    ./
+  dockerfile: *dockerfile
+  ## failed to solve: granting entitlement security.insecure is not allowed by build daemon configuration
+  #privileged: true
+  #cap_add: [ NET_RAW ]
+  #cap_add: [ SYS_ADMIN, SYS_TIME ]
+  ## failed to solve: granting entitlement network.host is not allowed by build daemon configuration
+  #network: host
+  args:
+    *appArgs
+  #platforms:     [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
+  #platforms:    [ "linux/arm64","linux/arm/v7" ]
+## ---------------------------------------------------------------------------------------------------------------------
+## MARK: ENV_FROM
+## ---------------------------------------------------------------------------------------------------------------------
+x-envFiles: &EnvFiles
+  #- /volume1/DATA_1/git-repos/_dotfiles/deploy/linkwarden/.env
+  - /data/compose/linkwarden/.env
+  - stack.env
+
+
+## ---------------------------------------------------------------------------------------------------------------------
+## MARK: VOLUMES
+##  sudo docker volume create linkwarden --opt type=none --opt o=bind --opt device=/volume1/@docker/volumes/linkwarden
+## ---------------------------------------------------------------------------------------------------------------------
+volumes:
+  linkwarden:
+    external: true
+    name: linkwarden
+x-appVolumes: &appVolumes
+  #- .:./
+  ## For persisting Pi-hole's databases and common configuration file
+  #- ${MNT./}etc-pihole:/etc/pihole
+  #- ./linkwarden_data:/data/data
+  - type: volume
+    target: /data/data
+    source: linkwarden
+    volume:
+      subpath: linkwarden_data/
+  #- ./meili_data:/meili_data
+  - type: volume
+    target: /meili_data
+    source: linkwarden
+    volume:
+      subpath: meili_data/
+  #- ./pg_data:/var/lib/postgresql/data
+  - type: volume
+    target: /var/lib/postgresql/data
+    source: linkwarden
+    volume:
+      subpath: pg_data/
+  ## For custom DNS resolver configuration
+  #- ${MNT:-./}resolv.conf:/etc/resolv.conf:ro
+  #- type: volume
+  #  target: /etc/resolv.conf
+  #  source: proxy_data
+  #  volume:
+  #    subpath: pihole_config/resolv.conf
+
+
+## ---------------------------------------------------------------------------------------------------------------------
+## MARK: SERVICES
+##  https://docs.linkwarden.app/self-hosting/installation
+## ---------------------------------------------------------------------------------------------------------------------
+services:
+  postgres:
+    image: postgres:16-alpine
+    env_file: *EnvFiles
+    restart: always
+    volumes: *appVolumes
+  linkwarden:
+    env_file: *EnvFiles
+    environment:
+      - DATABASE_URL=${DATABASE_URL-postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres}
+    restart: always
+    # build: . # uncomment to build from source
+    image: ghcr.io/linkwarden/linkwarden:latest # comment to build from source
+    ports:
+      - 3000:3000
+    volumes: *appVolumes
+    depends_on:
+      - postgres
+      - meilisearch
+  meilisearch:
+    image: getmeili/meilisearch:v1.12.8
+    restart: always
+    env_file: *EnvFiles
+    volumes: *appVolumes
