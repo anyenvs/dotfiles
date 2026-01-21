@@ -34,7 +34,7 @@ ARG DIST=pihole/pihole:latest
 ##  ( cd ~/_dotfiles/deploy/proxy ; docker-compose -f ./docker-compose.yml build proxy --check )
 ## #################################################################################################################
 ARG DIST=pihole/pihole:latest
-FROM ${DIST}
+FROM ${DIST} AS pihole-base
 
 ARG ALPINE=${ALPINE}
 ARG EXPOSE="53 80"
@@ -50,7 +50,6 @@ ARG RUNIT_SV_RESTART
 ARG RUNIT_TIMER_PROXY
 ARG RUNIT_TIMER_RESTART
 ARG RUNIT_TIMER_CONFD
-EXPOSE ${PORT_EXPOSE_HTTP} ${PORT_EXPOSE_SOCKS}
 
 ENV PORT_EXPOSE_HTTP=${PORT_EXPOSE_HTTP} \
     PORT_EXPOSE_SOCKS=${PORT_EXPOSE_SOCKS} \
@@ -118,7 +117,18 @@ RUN set -xe ;\
     #test -f /etc/service/confd/log*/down && rm -fv /etc/service/confd/log*/down ;
     echo ;
 
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-    CMD /usr/bin/echo ok || exit 0
+#EXPOSE ${PORT_EXPOSE_HTTP} ${PORT_EXPOSE_HTTPS} ${PORT_EXPOSE_UDP} ${PORT_EXPOSE_DNS}
+EXPOSE 53 80 443
 
+# Use the appropriate FTL Install stage based on the FTL_SOURCE build-arg
+FROM ${DIST} AS final
+
+
+#HEALTHCHECK CMD dig -p $(pihole-FTL --config dns.port) +short +norecurse +retry=0 pi.hole @127.0.0.1 || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+            CMD /usr/bin/echo ok || exit 0
+
+#EXPOSE ${PORT_EXPOSE_HTTP} ${PORT_EXPOSE_HTTPS} ${PORT_EXPOSE_UDP} ${PORT_EXPOSE_DNS}
+EXPOSE 53 80 443
+ENTRYPOINT ["start.sh"]
 CMD ["start.sh"]
