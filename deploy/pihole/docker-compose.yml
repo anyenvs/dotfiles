@@ -20,9 +20,8 @@ x-imageICR: &imageICR
   icr.io/automation-saas-platform/mcsp-sre/pihole:${TAG:-latest}
 x-appArgs: &appArgs
   #DIST: debian:bullseye-slim
-  #DIST: alpine:edge
-  DIST: ${DIST-alpine:3.17.9}  ## this only works on armv7l
-  PORT_EXPOSE: 8000
+  DIST: ${DIST-alpine:edge}
+  #DIST: ${DIST-alpine:3.17.9}  ## this only works on armv7l
   APP_NAME: pihole
   ENTRYPOINT: ${ENTRYPOINT-start.sh}
   SOPS_VERSION: 3.10.1
@@ -49,9 +48,13 @@ x-security-opts: &security-opts
   privileged: true
   cap_add:
     - SYS_ADMIN
-    - NET_ADMIN
-    - DNS_ADMIN
+    - SYS_NICE
     - SYS_TIME
+    - NET_ADMIN
+    - NET_BIND_SERVICE
+    - NET_RAW
+    - NET_ADMIN
+    - CHOWN
   #security_opt:
   #  - seccomp:unconfined
   #  - label:disable
@@ -77,17 +80,21 @@ x-deploy: &deploy
     delay: 10s
     order: start-first
   restart_policy:
-    #condition: "Always"
-    condition: on-failure
     delay: 5s
-    max_attempts: 999
+    condition: always
+    ## invalid restart policy: maximum retry count can only be used with 'on-failure'
+    #condition: on-failure
+    #max_attempts: 999
   resources:
     limits:
       cpus: '0.5'
       memory: 512M
     reservations:
-      cpus: '0.2'
+      cpus: '0.1'
       memory: 128M
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: BUILD
+## ----------------------------------------------------------------------------------------------------------------------------------------------
 x-build: &Build
   context:    ./
   dockerfile: *dockerfile
@@ -104,6 +111,7 @@ x-build: &Build
 
 ## ----------------------------------------------------------------------------------------------------------------------------------------------
 ## MARK: NETWORKS
+## https://sergeytihon.com/2025/06/28/pi-hole-dns-on-ugos-pro-1-6-0-2917/
 ## ----------------------------------------------------------------------------------------------------------------------------------------------
 networks:
   proxy_net:
@@ -118,15 +126,25 @@ networks:
     #labels:
     #  - "network.scope=swarm"
     #  - "network.purpose=proxy"
-    driver: bridge
+    #driver: bridge
+    #ipam:
+    #  config:
+    #    - subnet: 172.50.0.0/24
+    #    #- subnet: 10.10.0.0/16
+    #    #  ip_range: 10.10.10.0/24
+    #    #  gateway: 10.10.10.1
+    ## Workaround 3: Use macvlan network to assign static IP to Pi-hole
+    driver: macvlan
+    driver_opts:
+      parent: eth0 # Or your physical network interface
     ipam:
       config:
-        - subnet: 172.50.0.0/24
-        #- subnet: 10.10.0.0/16
-        #  ip_range: 10.10.10.0/24
-        #  gateway: 10.10.10.1
+        - subnet: 192.168.1.0/24 # Replace with your desired subnet
+          gateway: 192.168.1.1 # Replace with your gateway
+
 ## ----------------------------------------------------------------------------------------------------------------------------------------------
 ## MARK: VOLUMES
+## sudo docker volume create proxy_data --opt type=none --opt o=bind --opt device=/volume1/@docker/volumes/proxy_data
 ## ----------------------------------------------------------------------------------------------------------------------------------------------
 volumes:
   proxy_data:
@@ -134,21 +152,41 @@ volumes:
     name: proxy_data
 x-appVolumes: &appVolumes
   #- .:./
-  - ./resolv.conf:/etc/resolv.conf:ro
+  ## For persisting Pi-hole's databases and common configuration file
+  #- ${MNT./}etc-pihole:/etc/pihole
   - type: volume
-    target: /config
+    target: /etc/pihole
     source: proxy_data
     volume:
-      subpath: /pihole_data
+      subpath: pihole_config/
+  ## For custom DNS resolver configuration
+  #- ${MNT:-./}resolv.conf:/etc/resolv.conf:ro
+  #- type: volume
+  #  target: /etc/resolv.conf
+  #  source: proxy_data
+  #  volume:
+  #    subpath: pihole_config/resolv.conf
+
+## ---------------------------------------------------------------------------------------------------------------------
+## MARK: ENV_FROM ( Optional )
+##   https://docs.pi-hole.net/docker/configuration/#environment-variables
+##   sudo vim /volume1/@docker/volumes/portainer/_data/data/compose/pihole/.env
+## ---------------------------------------------------------------------------------------------------------------------
+x-envFiles: &EnvFiles
+  #- /volume1/DATA_1/git-repos/_dotfiles/deploy/pihole/.env
+  - /data/compose/pihole/.env
+  - stack.env
 
 ## ----------------------------------------------------------------------------------------------------------------------------------------------
-##  MARK: SERVICES  ##
-## https://github.com/pi-hole/pi-hole
-## https://github.com/pi-hole/docker-pi-hole/tree/master/src
+## MARK: SERVICES  ##
+##  https://github.com/pi-hole/pi-hole
+##  https://github.com/pi-hole/docker-pi-hole/tree/master/src
+##  https://github.com/pi-hole/docker-pi-hole?tab=readme-ov-file#quick-start
 ## ----------------------------------------------------------------------------------------------------------------------------------------------
 services:
   ## --------------------------------------------------------------------------------------------------------------------------------------------
-  ##  MARK: PIHOLE SERVICE  ##
+  ## MARK: PIHOLE SERVICE  ##
+  ##  https://github.com/pi-hole/docker-pi-hole?tab=readme-ov-file#quick-start
   ## --------------------------------------------------------------------------------------------------------------------------------------------
   pihole:
     ## Host mode uses host network directly, ports ignored
@@ -160,7 +198,7 @@ services:
         ipv4_address: 172.100.0.11
       dns:
         ### Assign the static IP
-        ipv4_address: 172.50.0.11
+        ipv4_address: 192.168.1.53
     hostname:     ${APP_NAME:-pihole}
     image:        *image
     ## Keep platform disabled to avoid build issues
@@ -170,8 +208,10 @@ services:
     ports:
       - 53:53/tcp
       - 53:53/udp
-      - 8060:80/tcp
-      - 8444:443/tcp
+      #- 67:67/udp
+      #- 123:123/udp
+      #- 8080:80
+      - 8444:443
     build:
       context:    ${MNT-./}
       dockerfile: *dockerfile
@@ -180,7 +220,11 @@ services:
         DNSMASQ_LISTENING: "all"
         TZ: "America/New_York"
         #WEBPASSWORD: "changeme_tbd"
-        FTLCONF_LOCAL_IPV4: "172.100.0.11"
+        FTLCONF_dns_listeningMode: ${FTLCONF_dns_listeningMode-all}
+        FTLCONF_misc_etc_dnsmasq_d: ${FTLCONF_misc_etc_dnsmasq_d-true}
+        FTLCONF_LOCAL_IPV4: ${FTLCONF_LOCAL_IPV4-"192.168.1.166"}
+        FTLCONF_dns_reply_host_IPv4: ${FTLCONF_dns_reply_host_IPv4-"192.168.1.166"}
+        #FTLCONF_LOCAL_IPV4: ${FTLCONF_LOCAL_IPV4-"172.100.0.11"}
         ## Optional: Add static local DNS entries
         #FTLCONF_dns_hosts: |
         #  172.100.0.2 haproxy.local
@@ -192,8 +236,8 @@ services:
         #- linux/arm/v7
         #- linux/arm64
         #- linux/amd64
-    #restart: always
-    restart: unless-stopped
+    restart: always
+    #restart: unless-stopped
     ## DNS resolve works only with network_mode=host
     <<: *dns
     deploy:
@@ -201,8 +245,9 @@ services:
     # To avoid issue with named volume and mounting time
     #<<: *security-opts
     privileged: true
-    cap_add: [ SYS_ADMIN, SYS_TIME, NET_ADMIN, DNS_ADMIN ]
+    cap_add: [ SYS_ADMIN, SYS_NICE, SYS_TIME, NET_ADMIN, NET_BIND_SERVICE, NET_RAW, CHOWN ]
     env_file: stack.env
+    ## https://docs.pi-hole.net/docker/configuration/#environment-variables
     environment:
       - HOME=/root
     #entrypoint: sh -c '/app/entrypoint.sh'
