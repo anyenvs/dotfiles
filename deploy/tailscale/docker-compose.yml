@@ -1,15 +1,16 @@
 ## attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion
 #version: '3.8'
 ## ------------------------------------------------------------------------------------------------------------------------------------------------
-## MARK: LINKWARDEN Repo
-##  https://docs.linkwarden.app/self-hosting/installation
+## MARK: TAILSCALE Repo
+##  https://tailscale.com/blog/how-tailscale-works
+##  https://github.com/tailscale/tailscale?tab=readme-ov-file#tailscale
 ## ------------------------------------------------------------------------------------------------------------------------------------------------
 ## Main Image Name and Dockerfile
 ## ------------------------------------------------------------------------------------------------------------------------------------------------
 x-dockerfile: &dockerfile
   ${DOCKERFILE-Dockerfile}
 x-image: &image
-  linkwarden:latest
+  tailscale:latest
 x-appArgs: &appArgs
   #DIST: debian:bullseye-slim
   DIST: ${DIST-alpine:edge}
@@ -43,17 +44,21 @@ x-deploy: &deploy
     delay: 10s
     order: start-first
   restart_policy:
-    #condition: always
-    condition: on-failure
     delay: 5s
-    max_attempts: 999
+    condition: always
+    ## invalid restart policy: maximum retry count can only be used with 'on-failure'
+    #condition: on-failure
+    #max_attempts: 999
   resources:
     limits:
       cpus: '0.5'
       memory: 512M
     reservations:
-      cpus: '0.2'
-      memory: 128M
+      cpus: '0.25'
+      memory: 256M
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: BUILD
+## ----------------------------------------------------------------------------------------------------------------------------------------------
 x-build: &Build
   context:    ./
   dockerfile: *dockerfile
@@ -69,43 +74,40 @@ x-build: &Build
   #platforms:    [ "linux/arm64","linux/arm/v7" ]
 
 ## ---------------------------------------------------------------------------------------------------------------------
-## MARK: ENV_FROM
+## MARK: ENV_FROM ( Optional )
+##   sudo vim /volume1/@docker/volumes/portainer/_data/data/compose/tailscale/.env
 ## ---------------------------------------------------------------------------------------------------------------------
 x-envFiles: &EnvFiles
-  #- /volume1/DATA_1/git-repos/_dotfiles/deploy/linkwarden/.env
-  - ${MNT-}/data/compose/linkwarden/.env
+  #- /volume1/DATA_1/git-repos/_dotfiles/deploy/tailscale/.env
+  - /data/compose/tailscale/.env
   - stack.env
+
 
 ## ---------------------------------------------------------------------------------------------------------------------
 ## MARK: VOLUMES
-##  sudo docker volume create linkwarden --opt type=none --opt o=bind --opt device=/volume1/@docker/volumes/linkwarden
+##  sudo docker volume create tailscale --opt type=none --opt o=bind --opt device=/volume1/@docker/volumes/tailscale
+##  sudo mkdir -p /volume1/@docker/volumes/portainer/_data/data/compose/tailscale
+##  sudo vim /volume1/@docker/volumes/portainer/_data/data/compose/tailscale/.env
 ## ---------------------------------------------------------------------------------------------------------------------
 volumes:
-  linkwarden:
+  tailscale:
     external: true
-    name: linkwarden
+    name: tailscale
 x-appVolumes: &appVolumes
   #- .:./
   ## For persisting Pi-hole's databases and common configuration file
   #- ${MNT./}etc-pihole:/etc/pihole
-  #- ./linkwarden_data:/data/data
+  #- ./tailscale_data/lib:/var/lib
   - type: volume
-    target: /data/data
-    source: linkwarden
+    target: /var/lib
+    source: tailscale
     volume:
-      subpath: linkwarden_data/
-  #- ./meili_data:/meili_data
+      subpath: tailscale_data/lib/
   - type: volume
-    target: /meili_data
-    source: linkwarden
+    target: /dev/net/tun
+    source: tailscale
     volume:
-      subpath: meili_data/
-  #- ./pg_data:/var/lib/postgresql/data
-  - type: volume
-    target: /var/lib/postgresql/data
-    source: linkwarden
-    volume:
-      subpath: pg_data/
+      subpath: tailscale_data/tun
   ## For custom DNS resolver configuration
   #- ${MNT:-./}resolv.conf:/etc/resolv.conf:ro
   #- type: volume
@@ -117,29 +119,27 @@ x-appVolumes: &appVolumes
 
 ## ---------------------------------------------------------------------------------------------------------------------
 ## MARK: SERVICES
-##  https://docs.linkwarden.app/self-hosting/installation
+##  https://www.youtube.com/watch?v=cfM3OwEXZao
+##  https://www.thestorageguy.net/easiest-way-to-install-tailscale-vpn-on-ugreen-nas/
+##  https://www.reddit.com/r/UgreenNASync/comments/1p7ymam/install_tailscale_on_your_ugreen_nas_within_5/
 ## ---------------------------------------------------------------------------------------------------------------------
 services:
-  postgres:
-    image: postgres:16-alpine
-    env_file: *EnvFiles
+  tailscale:
+    container_name: tailscale
+    image: tailscale/tailscale:latest
+    network_mode: host
     restart: always
+    deploy:
+      <<: *deploy
+    #privileged: true
+    cap_add: [ NET_ADMIN, SYS_MODULE ]
     volumes: *appVolumes
-  linkwarden:
     env_file: *EnvFiles
     environment:
-      - DATABASE_URL=${DATABASE_URL-postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres}
-    restart: always
-    # build: . # uncomment to build from source
-    image: ghcr.io/linkwarden/linkwarden:latest # comment to build from source
-    ports:
-      - 3000:3000
-    volumes: *appVolumes
-    depends_on:
-      - postgres
-      - meilisearch
-  meilisearch:
-    image: getmeili/meilisearch:v1.12.8
-    restart: always
-    env_file: *EnvFiles
-    volumes: *appVolumes
+      #- TS_AUTH_KEY= ## set in .env file
+      - TS_HOSTNAME=UGNAS
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_ROUTES=192.168.1.0/24
+      #- TS_ROUTES=192.168.1.0/24,192.168.100.0/24
+      #- TS_EXTRA_ARGS=--hostname=UGNAS --advertise-exit-node --accept-routes
+      - TS_EXTRA_ARGS=--advertise-exit-node --accept-routes
