@@ -23,10 +23,11 @@ _BREW_PACKAGES=(
     # python-yq - replaced with yq-go package
     # gls - is a part of coreutils
     coreutils findutils diffutils binutils iputils iproute2mac
-    gcc@8 gcc make cmake libffi
+    #gcc@8 ## deprecated
+    gcc make cmake libffi
     gnupg grep ca-certificates
     xz bzip2 lzlib zlib zip 7zip p7zip libarchive
-    autoconf openssl@1.1 pkg-config readline
+    autoconf openssl@4 pkg-config readline
     # fzf
     git #gh
     far2l
@@ -50,10 +51,13 @@ _BREW_PACKAGES=(
     task tldr oniguruma
     gnu-sed ripgrep
     ## ip tools , networking
-    iproute2mac nmap
+    iproute2mac nmap netcat
     ## DB tools
     libpq # mysql-client pgloader postgresql@14
     # glow hugo
+    taylorwilsdon/tap/reclaimed
+    # video tools
+    ffmpeg yt-dlp mpv
 )
 
 _BREW_CASK_PACKAGES=(
@@ -61,6 +65,7 @@ _BREW_CASK_PACKAGES=(
     font-fira-code
     ## https://github.com/elfmz/far2l
     far2l
+    openvpn-connect
 )
 
 _xcode-cli-install() {
@@ -130,7 +135,7 @@ _brew-install-packages() {
 
     # Casks
     brew install vim -vd protobuf
-    brew tap homebrew/cask-fonts
+    #brew tap homebrew/cask-fonts ## deprecated
     for pkg in ${_BREW_CASK_PACKAGES[@]}; do printf " ===> 🚀 Installing %s\n" "${pkg}" && brew install --cask ${pkg,,} || true; done
 
     # Some tidying up

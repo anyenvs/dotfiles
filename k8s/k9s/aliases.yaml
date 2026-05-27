@@ -7,6 +7,11 @@ aliases:
   sre-sec-promfed: secret /fed
   sre-cm-promfed: cm /fed
   crcap: crc ap
+  crvpcap: crvpc ap
+  crconnectivitiesap: cloudrockconnectivities ap
+  crconnectivities: cloudrockconnectivities
+  crdmcsp: crds /cloudrock
+  crdap: crds /cloudrock ap
   #crc: crc ap
   crclogs: deployment cloudrock-controller -n cloudrock-controller
   cloudrockdeploy: deployment cloudrock-controller -n cloudrock-controller

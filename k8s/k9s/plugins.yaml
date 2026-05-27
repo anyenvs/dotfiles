@@ -22,7 +22,7 @@ plugins:
     args:
       - -c
       - |
-        oc show secret -n $NAMESPACE $NAME | bat --style=numbers --color=always --line-range :500 --paging=always -l json;
+        oc show secret -n $NAMESPACE $NAME | bat --style=numbers --color=always --line-range :500 --paging=never -l json --style=numbers,header ;
         #read -n 1 -s -r -p "Press any key to continue";
   ## ########################################
   ## Cloudrock Cluster
@@ -64,7 +64,7 @@ plugins:
           kube_version:$r.spec.kube_version,infrastructure:$r.spec.infrastructure,location:$r.spec.location,multiaz:$r.spec.multiaz,
           workerPoolStatus:$r.status.workerPoolStatus,clusterStatus:$r.status.clusterStatus,clusterVersionStatus:$r.status.clusterVersionStatus,
           AddonStatus: (.)} ' \
-          | yq -P | bat --style=numbers --color=always --line-range :500 -l yaml --paging=always;
+          | yq -P | bat --color=always --line-range :500 -l yaml --paging=always --style=numbers,header ;
         echo "oc --context $CONTEXT get crc $NAME -n $NAMESPACE -o json | jq '. as \$r |$r.status.addonStatus | {CRC: (\$r.metadata.name ), NS:( \$r.metadata.namespace ), workerPoolStatus:\$r.status.workerPoolStatus,clusterStatus:\$r.status.clusterStatus,clusterVersionStatus:\$r.status.clusterVersionStatus, AddonStatus: (.)} ' | yq -P";
         #read -n 1 -s -r -p "Press any key to continue";
     # Whether
@@ -267,6 +267,9 @@ plugins:
     description: "Controller Addon Logs"
     scopes:
       - cloudrockclusters
+      - cloudrockconnectivities
+      - cloudrockvpcs
+      - cloudrocks
       - deployments
       - deployments.v1.apps
     # The command to execute. We use the standard kubectl get command for our CRD.
@@ -275,7 +278,7 @@ plugins:
       - -c
       - |
         ##
-        _LOGGER=$( fzf --header 'Use Gonzo ?' --height 30% < <( echo "" ; echo "gonzo --format=json" ; echo "gonzo --format=text" ; ) --preview 'echo {}' || echo "" )
+        _LOGGER=$( fzf --header 'Use Gonzo ?' --height 30% < <( echo "" ; echo "filter $NAME" ; echo "gonzo --format=json" ; echo "gonzo --format=text" ; ) --preview 'echo {}' || echo "" )
         _SINCE=$( fzf --header 'SINCE_TIME' --height 30% < <( echo "" ; echo 10m ; echo 1h ; echo 6h ; echo 12h ; echo 24h ; echo 360h ; ) --preview 'echo {}' || echo "" )
         case $_LOGGER in
           gonzo*)
@@ -285,9 +288,16 @@ plugins:
               _CMD="oc --context $CONTEXT -n cloudrock-controller logs -f $_RES ${_SINCE:+--since=$_SINCE} "
               eval "$_CMD | $_LOGGER " ;
           ;;
+          filter*)
+            _POD=$( oc --context $CONTEXT -n cloudrock-controller get pod -o name | fzf -m --header '$NAME' --height 30% --query='' --preview-window=right,70% )
+            test -n "$_POD" || { echo "No POD selected" ; read -n 1 -s -r -p "Press any key to continue"; exit 0 ; }
+            _CMD="oc --context $CONTEXT -n cloudrock-controller logs -f $_POD ${_SINCE:+--since=$_SINCE}"
+            echo $_CMD;
+            oc --context $CONTEXT -n cloudrock-controller logs -f $_POD ${_SINCE:+--since=$_SINCE} | grep $NAME | bat --paging=never -l json --style=numbers,header ;
+            ;;
           *)
             _POD=$( oc --context $CONTEXT -n cloudrock-controller get pod -o name | fzf -m --header '$NAME' --height 30% --query='' --preview-window=right,70% )
-            test -n "$_POD" || { echo "No POD selected" ; exit 0 ; }
+            test -n "$_POD" || { echo "No POD selected" ; read -n 1 -s -r -p "Press any key to continue"; exit 0 ; }
             _CMD="oc --context $CONTEXT -n cloudrock-controller logs -f $_POD ${_SINCE:+--since=$_SINCE}"
             echo $_CMD;
             oc --context $CONTEXT -n cloudrock-controller logs -f $_POD ${_SINCE:+--since=$_SINCE} | bat --paging=never -l json --style=numbers,header ;
@@ -303,13 +313,14 @@ plugins:
 
   ## ########################################
   ## MARK: Cloudrock Controller
-  ## MARK: Token Rotate
+  ## MARK: Token Rotate Token
   ## ########################################
   cp-token-rotate:
     shortCut: Shift-R
     description: "CP Token Rotate"
     scopes:
       - cloudrockclusters
+      - deployments.v1.apps
     # The command to execute. We use the standard kubectl get command for our CRD.
     command: /usr/local/bin/bash
     args:
@@ -326,12 +337,16 @@ plugins:
             read -n 1 -s -r -p "Press any key to continue (Ctrl-C to abort)" ;
         done
 
+        NAMESPACE1="${NAMESPACE//cloudrock-controller/ap}"
+        echo "$NAMESPACE1"
         echo "${NAMESPACE}"
         _CLUSTER=$( echo "${NAMESPACE}" | awk -F'-' '{for(i=2;i<=(NF-4);i++){if(i>2)printf "-";printf $i}}' )
 
         ocm list clusters -p search="name='$_CLUSTER'" --columns ID --no-headers || _rosa-token-refresh ;
 
-        _CLUSTER=( $( fzf -m --header $'CLUSTER List\nhttps://rb.gy/4c5s2r\nhttps://pages.github.ibm.com/ibm-saas-platform/MultiCloud-SaaS-Framework/Architectural_Overview/Resources/mcsp_clusters/#__tabbed_2_1' --height 30% --preview-window=right,70% --preview 'oc show secret {} -n $NAMESPACE --context $CONTEXT ' < <( echo $_CLUSTER ;
+        _CLUSTER=( $( fzf -m --header $'CLUSTER List\nhttps://rb.gy/4c5s2r\nhttps://pages.github.ibm.com/ibm-saas-platform/MultiCloud-SaaS-Framework/Architectural_Overview/Resources/mcsp_clusters/#__tabbed_2_1' \
+                --height 30% --preview-window=right,70% \
+                --preview 'echo oc show secret {} -n ap --context $CONTEXT ' < <( echo $_CLUSTER ;
                     xargs -n1 <<< "ap-usge1-pp-dp ap-usge1-pp-cp ap-usge1-dp-01 ap-usge1-cp-01 ap-dp-t-fedramp ap-cp-t-fedramp";
                     xargs -n1 <<< "ap-cp-001 ap-dp-001 ap-cp-101 ap-dp-101";
                     xargs -n1 <<< "ap-use1-d-cp-01 ap-use1-d-dp-01 ap-use1-t-cp-01 ap-use1-t-dp-01 ap-use1-cp-01 ap-use1-dp-01";

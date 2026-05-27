@@ -1,5 +1,7 @@
+## https://k9scli.io/topics/config/
 k9s:
-  liveViewAutoRefresh: false
+  liveViewAutoRefresh: true
+  screenDumpDir: /Users/malinovv/.config/k9s/screen-dumps
   refreshRate: 5
   maxConnRetry: 5
   enableMouse: false
@@ -10,101 +12,49 @@ k9s:
   noExitOnCtrlC: false
   noIcons: false
   skipLatestRevCheck: false
+  ui:
+    enableMouse: false
+    headless: false
+    logoless: true
+    splashless: true
+    crumbsless: false
+    reactive: true
+    noIcons: false
+    defaultsToFullScreen: false
+  disablePodCounting: false
+  # Enable NodeShell ## oad failed:\nAdditional property nodeShell is not allowed
+  #nodeShell:
+  #  #image: "busybox:latest"
+  #  image: icr.io/ibm-saas-platform/external-images/ubi-busybox:1.37.0
+  #  namespace: "default"
+  #  command: ["/bin/sh"]
+  #  privileged: true
+  #  limits:
+  #    cpu: "100m"
+  #    memory: "100Mi"
+  #  requests:
+  #    cpu: "50m"
+  #    memory: "50Mi"
+  shellPod:
+    #image: busybox:1.35.0
+    image: icr.io/ibm-saas-platform/external-images/ubi-busybox:1.37.0
+    namespace: default
+    limits:
+      cpu: 100m
+      memory: 100Mi
+  imageScans:
+    enable: true
+    exclusions:
+      namespaces: []
+      labels: {}
   logger:
     tail: 100
-    buffer: 5000
+    buffer: 10000
     sinceSeconds: -1
     fullScreenLogs: false
     textWrap: false
+    disableAutoscroll: false
     showTime: false
-  currentContext: default/api-ap-dp-public001-eastus-aroapp-io:6443/kube:admin
-  currentCluster: api-ap-dp-public001-eastus-aroapp-io:6443
-  clusters:
-    api-ap-cp-001-p05k-p1-openshiftapps-com:6443:
-      namespace:
-        active: ap
-        lockFavorites: false
-        favorites:
-        - ap
-        - sretools-isv
-        - default
-      view:
-        active: crc
-      featureGates:
-        nodeShell: false
-      shellPod:
-        image: busybox:1.35.0
-        command: []
-        args: []
-        namespace: default
-        limits:
-          cpu: 100m
-          memory: 100Mi
-        labels: {}
-      portForwardAddress: localhost
-    api-ap-dp-001-koh3-p1-openshiftapps-com:6443:
-      namespace:
-        active: sretools
-        lockFavorites: false
-        favorites:
-        - sretools
-        - default
-      view:
-        active: ctx
-      featureGates:
-        nodeShell: false
-      shellPod:
-        image: busybox:1.35.0
-        command: []
-        args: []
-        namespace: default
-        limits:
-          cpu: 100m
-          memory: 100Mi
-        labels: {}
-      portForwardAddress: localhost
-    api-ap-dp-public001-eastus-aroapp-io:6443:
-      namespace:
-        active: sretools-apic
-        lockFavorites: false
-        favorites:
-        - sretools-apic
-        - default
-      view:
-        active: svc
-      featureGates:
-        nodeShell: false
-      shellPod:
-        image: busybox:1.35.0
-        command: []
-        args: []
-        namespace: default
-        limits:
-          cpu: 100m
-          memory: 100Mi
-        labels: {}
-      portForwardAddress: localhost
-    api-ap-sretool-ap-1-eastus-aroapp-io:6443:
-      namespace:
-        active: sretools-sp
-        lockFavorites: false
-        favorites:
-        - sretools-sp
-        - default
-      view:
-        active: ns
-      featureGates:
-        nodeShell: false
-      shellPod:
-        image: busybox:1.35.0
-        command: []
-        args: []
-        namespace: default
-        limits:
-          cpu: 100m
-          memory: 100Mi
-        labels: {}
-      portForwardAddress: localhost
   thresholds:
     cpu:
       critical: 90
@@ -112,4 +62,3 @@ k9s:
     memory:
       critical: 90
       warn: 70
-  screenDumpDir: /tmp/k9s-dumps
