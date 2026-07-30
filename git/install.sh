@@ -40,6 +40,10 @@ _github-cli-configs() {
 ## Gitlab Cli config
 _gitlab-cli-configs() {
     test -d "${HOME}/.config/glab-cli" || mkdir -p ${HOME}/.config/glab-cli
+    ## Glab Aliases
+    test -f "${HOME}/.config/glab-cli/glab_aliases.yml" && mv -fv ${HOME}/.config/glab-cli/aliases.yml ${HOME}/.config/glab-cli/aliases.yml
+    test -L "${HOME}/.config/glab-cli/glab_aliases.yml" || ln -svnf "${DOTFILES_PATH}"/git/glab/glab_aliases.yml ${HOME}/.config/glab-cli/aliases-$( date +%F ).yml
+    ## Glab Config
     test -f "${HOME}/.config/glab-cli/config.yml" -a -L "${HOME}/.config/glab-cli/config.yml" -a -f "$(command -v sops)" || {
         sops -d "${DOTFILES_PATH}"/git/glab/config.yml &> /dev/null || _error "===> File not encrypted: $(ls -l "${DOTFILES_PATH}"/git/glab/config.yml)\n===> Otherwise check if correct keys used\n";
         sops -d "${DOTFILES_PATH}"/git/glab/config.yml &> /dev/null && sops -d "${DOTFILES_PATH}"/git/glab/config.yml > "${DOTFILES_PATH}"/git/glab/config_raw_yml;
@@ -48,8 +52,10 @@ _gitlab-cli-configs() {
         _log "===> File exist: $(ls -l ${HOME}/.config/glab-cli/config.yml)" ;
         return ;
     } || ln -svnf "${DOTFILES_PATH}"/git/glab/config_raw_yml ${HOME}/.config/glab-cli/config.yml
-    ## Glab Aliases
-    test -f "${HOME}/.config/glab-cli/glab_aliases.yml" && ln -svnf "${DOTFILES_PATH}"/git/glab/glab_aliases.yml ${HOME}/.config/glab-cli/aliases.yml
+
+    ## Grant 600 permissions
+    ls ${HOME}/.config/glab-cli/aliases.yml 2>/dev/null && chmod 600 $_
+    ls ${HOME}/.config/glab-cli/config.yml 2>/dev/null && chmod 600 $_
 }
 
 __main__() {

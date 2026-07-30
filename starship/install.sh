@@ -31,7 +31,7 @@ _starship-install() {
     #curl -sSL https://starship.rs/install.sh | sh -s -- --bin-dir /opt/starship/bin
     which starship 2>/dev/null || wget -qO- https://starship.rs/install.sh | sh -s -- --yes
     echo 'eval "$(starship init $SHELL)"' > ~/.starshiprc
-    grep -q starshiprc ~/.bashrc ||echo 'test -f ~/.starshiprc && . ~/.starshiprc' >> ~/.bashrc
+    grep -q starshiprc ~/.bashrc || echo 'test -f ~/.starshiprc && . ~/.starshiprc' >> ~/.bashrc
     test -f ~/.starshiprc && . ~/.starshiprc
 }
 

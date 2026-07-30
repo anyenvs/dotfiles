@@ -9,23 +9,25 @@ test -n "$_HELPERS" || _error "===> ❌ _HELPERS env var is missing in $0"
 
 eval which {git,} || _install git ;
 
-_fzf-istall() {
+_FZF_CONFIG_DIR="${HOME}/.fzf"
+
+_fzf-install() {
     # ######
     # FZF
     # ######
-    test -d ${HOME}/.fzf && {
-      _log "===> FZF exist: $(ls -l ${HOME}/.fzf)\n ===> Remove it before installing" ;
+    test -d $_FZF_CONFIG_DIR && {
+      _log "===> FZF exist: $( ls -l $_FZF_CONFIG_DIR )\n ===> Remove it before installing" ;
       return ;
     } || {
       _log "===> Installing FZF" ;
-      git clone --depth 1 https://github.com/junegunn/fzf.git ${HOME}/.fzf ;
-      ${HOME}/.fzf/install --completion --no-update-rc --no-key-bindings
+      git clone --depth 1 https://github.com/junegunn/fzf.git $_FZF_CONFIG_DIR ;
+      $_FZF_CONFIG_DIR/install --completion --no-update-rc --no-key-bindings
     }
 }
 
 
 __main__() {
-    _fzf-istall || return 1
+    _fzf-install || return 1
 }
 
 # ######
