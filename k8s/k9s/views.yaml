@@ -1,12 +1,13 @@
 ## https://k9scli.io/topics/columns/#:~:text=Overview&text=K9s%20provides%20for%20customizing%20resource,%24XDG_CONFIG_HOME%2Fk9s%2Fviews.
 views:
   v1/pods:
-    sortColumn: AGE:asc
+    #sortColumn: AGE:asc
+    sortColumn: MEM:dec,AGE:asc
     columns:
       - NAME
       - NAMESPACE
       #- "%CPU/R"
-      #- "%CPU/L"
+      - "%CPU/L"
       - "%MEM/R"
       - "%MEM/L"
   # => 🌚 New v0.40.6! You can also specify a namespace using a regular expression.
@@ -15,6 +16,26 @@ views:
       - NAME
       - AGE
       - LABELS
+  apps/v1/statefulsets:
+    #sortColumn: AGE:asc
+    sortColumn: MEM:dec,AGE:asc
+    columns:
+      - NAME
+      - NAMESPACE
+      #- "%CPU/R"
+      - "%CPU/L"
+      - "%MEM/R"
+      - "%MEM/L"
+  apps/v1/deployments:
+    #sortColumn: AGE:asc
+    sortColumn: MEM:dec,AGE:asc
+    columns:
+      - NAME
+      - NAMESPACE
+      #- "%CPU/R"
+      - "%CPU/L"
+      - "%MEM/R"
+      - "%MEM/L"
   v1/nodes:
     sortColumn: MEM:desc
     columns:

@@ -9,7 +9,7 @@ test -z "${_HELPERS}" && _HELPERS=($(find "${DOTFILES_PATH}"/ -name _helpers.bas
 test -n "$_HELPERS" || _error "===> ❌ _HELPERS env var is missing in $0"
 export COMPDIR=/etc/bash_completion.d
 test -d "$COMPDIR" || mkdir -p $COMPDIR
-set +x
+#set +x
 
 ###
 # ANYENV Installation of ENVS
@@ -37,6 +37,7 @@ echo -e 'verbose=off \nprogress=bar:force:noscroll \nshow_progress=on \ncheck_ce
 #runAsRoot() { if [ $EUID -ne 0 -a "$USE_SUDO" = "true" ]; then sudo "${@}"; else ${@}; fi || su -c "${@}" ; }
 #isPackageInstalled() { test -n "$(command -v $1)" -a -d $(ls -d1 ${HOME}/{.*,*} | grep $1 | head -1) && { _log "===> Binary: $(command -v $1)\n ===> DIR: $(ls -d1 ${HOME}/{.*,*} | grep $1)"; return 0; } || { _error "Missing or Binary in PATH\n ===> DIR: $(ls -d1 ${HOME}/{.*,*} | grep $1) \n ===> Binary in PATH: $(command -v $1)"; return -1; }; set +x; }
 #getInstaller() { _cmd=( $(eval which {apt-get,dnf,yum,brew}) ); test -n ${_cmd} || return 1; echo ${_cmd[@]}; echo ${_cmd}; }
+isAnyEnvInstalled() { test -n "$(command -v $1)" -a -d $(ls -d1 ${HOME}/{.*,*} | grep $1 | head -1) && { _log "===> Binary: $(command -v $1)\n ===> DIR: $(ls -d1 ${HOME}/{.*,*} | grep $1)"; return 0; } || { _error "Missing or Binary in PATH\n ===> DIR: $(ls -d1 ${HOME}/{.*,*} | grep $1) \n ===> Binary in PATH: $(command -v $1)"; return -1; }; set +x; }
 
 _setup_anyenv() {
     local anyenvs=(goenv jenv nodenv pyenv tfenv bazelenv helmenv helmfilenv)

@@ -91,7 +91,7 @@ is_shell_option_set() { # option, like "pipefail"
 runAsRoot()   { if [ $EUID -ne 0 -a "$USE_SUDO" = "true" ]; then sudo "${@}"; else ${@}; fi || su -c "${@}" ; }
 runAsUser()   { if [ $EUID -eq 0 -a "$USE_SUDO" = "true" ]; then sudo su - $USER bash -c "${@}"; else ${@}; fi || su - $USER -c "${@}" ; }
 setUserHome() { [[ $(id -u $USER) -eq 0 ]] && echo /root || echo /home/$USER ; }
-isBunaryInstalled() { eval which {$1,} && { _log "===> Binary: $(command -v $1)"; return 0; } || { _error "Missing Binary in PATH:\n $(command -v $1)"; return -1; }; set +x; }
+isBinaryInstalled() { eval which {$1,} && { _log "===> Binary: $(command -v $1)"; return 0; } || { _error "Missing Binary in PATH:\n $(command -v $1)"; return -1; }; set +x; }
 isAnyEnvInstalled() { test -n "$(command -v $1)" -a -d $(ls -d1 ${HOME}/{.*,*} | grep $1 | head -1) && { _log "===> Binary: $(command -v $1)\n ===> DIR: $(ls -d1 ${HOME}/{.*,*} | grep $1)"; return 0; } || { _error "Missing or Binary in PATH\n ===> DIR: $(ls -d1 ${HOME}/{.*,*} | grep $1) \n ===> Binary in PATH: $(command -v $1)"; return -1; }; set +x; }
 getOpts()      { _allOpts=$- ; set +x ; [[ $_allOpts =~ [x] ]] && { set +x ; _isSetX=1 ; }; echo "$@" ; test -z "$_isSetX" || { unset _isSetX;set -x; }; }  # set -x wrapper
 getInstaller() { _cmd=( $(eval which {apt-get,dnf,yum,brew}) ); test -n ${_cmd} || return 1; echo ${_cmd}; } #echo ${_cmd[@]};

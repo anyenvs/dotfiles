@@ -53,4 +53,6 @@ curl_*.txt
 *.[0-9]*
 _*(.[0-9])?
 vscode-server/config/
+clusters/
+screen-dumps/
 *_dec.*
