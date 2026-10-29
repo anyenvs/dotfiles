@@ -1,1 +1,0 @@
-s6-overlay/s6-rc.d
