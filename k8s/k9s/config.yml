@@ -1,1 +1,62 @@
-config.yaml
+## https://k9scli.io/topics/config/
+k9s:
+  liveViewAutoRefresh: true
+  screenDumpDir: /Users/malinovv/.config/k9s/screen-dumps
+  refreshRate: 5
+  maxConnRetry: 5
+  readOnly: false
+  noExitOnCtrlC: false
+  skipLatestRevCheck: false
+  ui:
+    enableMouse: false
+    headless: false
+    logoless: true
+    splashless: true
+    crumbsless: false
+    reactive: true
+    noIcons: false
+    defaultsToFullScreen: false
+  disablePodCounting: false
+  # Enable NodeShell ## oad failed:\nAdditional property nodeShell is not allowed
+  #nodeShell:
+  #  #image: "busybox:latest"
+  #  image: icr.io/ibm-saas-platform/external-images/ubi-busybox:1.37.0
+  #  namespace: "default"
+  #  command: ["/bin/sh"]
+  #  privileged: true
+  #  limits:
+  #    cpu: "100m"
+  #    memory: "100Mi"
+  #  requests:
+  #    cpu: "50m"
+  #    memory: "50Mi"
+  shellPod:
+    #image: busybox:1.35.0
+    image: icr.io/ibm-saas-platform/external-images/ubi-busybox:1.37.0
+    namespace: default
+    limits:
+      cpu: 100m
+      memory: 100Mi
+  imageScans:
+    enable: true
+    exclusions:
+      namespaces: []
+      labels: {}
+  # Logs configuration
+  logger:
+    tail: 100
+    buffer: 10000
+    # Represents how far to go back in the log timeline in seconds. Setting to -1 will tail logs. Default is -1.
+    sinceSeconds: -1
+    #fullScreenLogs: false
+    textWrap: false
+    disableAutoscroll: false
+    showTime: false
+  # Global memory/cpu thresholds. When set will alert when thresholds are met.
+  thresholds:
+    cpu:
+      critical: 90
+      warn: 70
+    memory:
+      critical: 90
+      warn: 70

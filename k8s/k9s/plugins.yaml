@@ -504,28 +504,37 @@ plugins:
     args:
       - -c
       - |
+        DEBUG=$( fzf --header 'DEBUG' --height 30% < <( echo "" ; echo "true"; ) );
+        [ -n "${DEBUG}" ] && { export PS4='+ [${BASH_SOURCE##*/}:${LINENO}] ' ; set -x; };
+
+        _ROSA_HELPERS=~/bin/_k9s-helpers.sh
+        while true ; do
+            test -f $_ROSA_HELPERS || { echo "$_ROSA_HELPERS not found"; } ;
+            echo "source $_ROSA_HELPERS" ;
+            source $_ROSA_HELPERS && break ;
+            read -n 1 -s -r -p "Press any key to continue (Ctrl-C to abort)" ;
+        done
+
         host="$1"
+        #host=$( _fzf-args $(oc get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'))
         json='
-        {
-          "apiVersion": "v1",
-          "spec": {
-            "hostIPC": true,
-            "hostNetwork": true,
-            "hostPID": true
-        '
+        {"apiVersion": "v1","spec": { "hostIPC": true, "hostNetwork": true, "hostPID": true'
         if ! [[ -z "$host" ]]; then
           json+=",
           \"nodeSelector\" : {
             \"kubernetes.io/hostname\" : \"$host\"
-          }
+          }}}
           ";
         fi
         json+='
           }
         }
         '
-        kubectl run -ti --image icr.io/ibm-saas-platform/external-images/ubi-busybox:1.37.0 --rm --restart=Never --overrides="$json" root --command -- nsenter -t 1 -m -u -n -i -- bash -l;
+        #kubectl run -ti --image icr.io/ibm-saas-platform/external-images/ubi-busybox:1.37.0 --rm --restart=Never --overrides="$json" root --command -- nsenter -t 1 -m -u -n -i -- bash -l;
         #kubectl run -ti --image icr.io/ibm-saas-platform/external-images/ubi-busybox:1.37.0 --rm --privileged --restart=Never --overrides="$json" root --command -- nsenter -t 1 -m -u -n -i -- bash -l;
+
+        json=$(printf '{"apiVersion": "v1","spec": {"serviceAccountName": "my-sa","hostIPC": true,"hostNetwork": true,"hostPID": true,"nodeSelector": { "kubernetes.io/hostname": "%s" }}}' "$host")
+        kubectl run -ti --image icr.io/ibm-saas-platform/external-images/ubi-busybox:1.37.0 --rm --restart=Never --overrides="$json" root --command -- nsenter -t 1 -m -u -n -i -- bash -l
         read -n 1 -s -r -p "Press any key to continue";
   kubectl-node_shell:
     shortCut: Ctrl-N
