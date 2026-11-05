@@ -1,0 +1,246 @@
+## attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion
+#version: '3.8'
+## ------------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: NUT Repo
+##  https://docs.nutss.app/self-hosting/installation
+## ------------------------------------------------------------------------------------------------------------------------------------------------
+## Main Image Name and Dockerfile
+## ------------------------------------------------------------------------------------------------------------------------------------------------
+x-dockerfile: &dockerfile
+  ${DOCKERFILE-Dockerfile}
+x-image: &image
+  nut:latest
+x-appArgs: &appArgs
+  #DIST: debian:bullseye-slim
+  DIST: ${DIST-alpine:edge}
+  #DIST: ${DIST-alpine:3.17.9}  ## this only works on armv7l
+  APP_NAME: nut
+  #ENTRYPOINT: ${ENTRYPOINT-start.sh}
+  SOPS_VERSION: 3.10.1
+  RUNIT_TIMER_CONFD: 300
+  #security_opt:
+  #  - seccomp:unconfined
+  #  - label:disable
+  ## https://github.com/just-containers/s6-overlay/issues/397#issuecomment-1030856278
+  tmpfs:
+    - /run:exec,mode=1777,size=65536k
+    - /run/lock
+x-healthcheckProxy: &healthcheckProxy
+  #test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8118/health || exit 1"]
+  #test: ["CMD", "dig", "-p", "$(pihole-FTL --config dns.port)", "+short", "+norecurse", "+retry=0", "@127.0.0.1", "pi.hole", "|| exit 1" ]
+  test: ["CMD", "/bin/echo", "ok || exit 1"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: DEPLOY
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+x-deploy: &deploy
+  replicas: 1
+  update_config:
+    parallelism: 2
+    delay: 10s
+    order: start-first
+  restart_policy:
+    #condition: always
+    condition: on-failure
+    delay: 5s
+    max_attempts: 999
+  resources:
+    limits:
+      cpus: '0.5'
+      memory: 512M
+    reservations:
+      cpus: '0.2'
+      memory: 128M
+x-build: &Build
+  context:    ./
+  dockerfile: *dockerfile
+  ## failed to solve: granting entitlement security.insecure is not allowed by build daemon configuration
+  #privileged: true
+  #cap_add: [ NET_RAW ]
+  #cap_add: [ SYS_ADMIN, SYS_TIME ]
+  ## failed to solve: granting entitlement network.host is not allowed by build daemon configuration
+  #network: host
+  args:
+    *appArgs
+  #platforms:     [ "linux/amd64","linux/arm64" ] #,linux/arm/v7
+  #platforms:    [ "linux/arm64","linux/arm/v7" ]
+
+## ---------------------------------------------------------------------------------------------------------------------
+## MARK: ENV_FROM
+## ---------------------------------------------------------------------------------------------------------------------
+x-envFiles: &EnvFiles
+  #- /volume1/DATA_1/git-repos/_dotfiles/deploy/nut-upsd/.env
+  #- ${MNT-}/data/compose/nut/.env
+  - stack.env
+
+## ---------------------------------------------------------------------------------------------------------------------
+## MARK: VOLUMES
+##  sudo docker volume create nut --opt type=none --opt o=bind --opt device=/volume1/@docker/volumes/nut
+## ---------------------------------------------------------------------------------------------------------------------
+volumes:
+  proxy_data:
+    external: true
+    name: proxy_data
+x-appVolumes: &appVolumes
+  - type: volume
+    target: /etc/nut
+    source: proxy_data
+    volume:
+      subpath: nut_config/
+  - type: volume
+    target: /config
+    source: proxy_data
+    volume:
+      subpath: peanut_config/
+  - "/dev/bus/usb:/dev/bus/usb"
+  ## For custom DNS resolver configuration
+  #- ${MNT:-./}resolv.conf:/etc/resolv.conf:ro
+  #- type: volume
+  #  target: /etc/resolv.conf
+  #  source: proxy_data
+  #  volume:
+  #    subpath: pihole_config/resolv.conf
+
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+## MARK: NETWORKS
+## https://sergeytihon.com/2025/06/28/pi-hole-dns-on-ugos-pro-1-6-0-2917/
+## ----------------------------------------------------------------------------------------------------------------------------------------------
+networks:
+  proxy_net:
+    external: true
+  dns_dns:
+    external: true
+
+## ---------------------------------------------------------------------------------------------------------------------
+## MARK: SERVICES
+##  https://docs.linkwarden.app/self-hosting/installation
+## ---------------------------------------------------------------------------------------------------------------------
+services:
+  ## ##########################################################
+  ## MARK: PEANUT Web UI will be accessible on port 8080
+  ## ##########################################################
+  peanut:
+    ## Host mode uses host network directly, ports ignored
+    #network_mode:   host
+    ## Swamp mode overlay network when 2 replicas
+    networks:
+      proxy_net:
+        ### Assign the static IP
+        ipv4_address: 172.100.0.33
+      dns_dns:
+        ### Assign the static IP
+        ipv4_address: 192.168.1.33
+    hostname:       peanut
+    container_name: peanut
+    image: brandawg93/peanut:latest
+    restart: always
+    ports:
+      - 8080:80
+    env_file: *EnvFiles
+    environment:
+      ## Web UI login username / password
+      - WEB_USERNAME=${NUTD_API_USER}
+      - WEB_PASSWORD="${NUT_HOST:-nutmaster}${NUTD_API_PASSWORD}"
+      ## Used for signing cookie sessions
+      - AUTH_SECRET=${NUT_AUTH_SECRET}
+      ## Uses Docker's internal DNS to link to the server
+      - NUT_HOST=${NUT_HOST:-nutmaster}
+      - NUT_PORT=${NUT_PORT:-3493}
+    volumes: *appVolumes
+    #volumes:
+    #  - ./peanut-config:/config
+    depends_on:
+      - nutmaster
+  ## ##########################################################
+  ## MARK: NUT MASTER Upsd Server will be accessible on port 3493
+  ## ##########################################################
+  nutmaster:
+    #privileged: true
+    ## Host mode uses host network directly, ports ignored
+    network_mode:   host
+    ## Swamp mode overlay network when 2 replicas
+    #networks:
+    #  proxy_net:
+    #    ### Assign the static IP
+    #    ipv4_address: 172.100.0.34
+    #  dns_dns:
+    #    ### Assign the static IP
+    #    ipv4_address: 192.168.1.34
+    image: ghcr.io/cplieger/docker-nut-upsd:latest
+    hostname:       nutmaster
+    container_name: nutmaster
+    env_file: *EnvFiles
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - UPS_NAME=usbhid
+      - UPS_DESC=BMS-Smart-Battery
+      - UPS_DRIVER=usbhid-ups
+      - UPS_PORT=auto
+      - API_USER=${NUTD_API_USER}
+      - API_PASSWORD=${NUTD_API_PASSWORD}
+    restart: always
+    ports:
+      - "3493:3493"
+    # Keep both USB lines below. Together they let the driver reach a UPS that
+    # drops off USB and comes back. A devices: mapping cannot do that.
+    device_cgroup_rules:
+      - "c 189:* rmw"
+    volumes: *appVolumes
+  ## ##########################################################
+  ## MARK: NUT UPSD Server will be accessible on port 3494 (for testing)
+  ## ##########################################################
+  #nut:
+  #  privileged: true
+  #  ## Host mode uses host network directly, ports ignored
+  #  #network_mode:   host
+  #  ## Swamp mode overlay network when 2 replicas
+  #  networks:
+  #    proxy_net:
+  #      ### Assign the static IP
+  #      ipv4_address: 172.100.0.34
+  #    dns_dns:
+  #      ### Assign the static IP
+  #      ipv4_address: 192.168.1.34
+  #  hostname:     ${APP_NAME:-nut}
+  #  container_name: nut
+  #  image: instantlinux/nut-upsd
+  #  ## Run container using the host's USB-owning group ID
+  #  ## lsusb # Bus 003 Device 002: ID 075d:0300 BMS- Smart-Battery
+  #  ## ls -l /dev/bus/usb/003/002 # crw-rw-r-- 1 root nut 189, 1 Jun 28 15:30 /dev/bus/usb/003/002
+  #  group_add:
+  #    - "118" # Replace with your host's nut GID
+  #  ## https://hub.docker.com/r/instantlinux/nut-upsd#variables
+  #  ## https://unixorn.github.io/post/homelab/homelab-nut-upsd/
+  #  env_file: *EnvFiles
+  #  environment:
+  #    - TZ=${TZ:-America/New_York}
+  #    #- GROUP=${NUT_GROUP:-nut}
+  #    #- USER=${NUT_USER:-nut}
+  #    - API_USER=${NUTD_API_USER}
+  #    - API_PASSWORD=${NUTD_API_PASSWORD}
+  #    - NAME=usbhid
+  #    - PORT=auto
+  #    #- PORT=/dev/bus/usb/003/002
+  #    - DESCRIPTION=BMS-Smart-Battery
+  #      ## lsusb ; lsusb -t
+  #      ## Bus 003 Device 002: ID 075d:0300 -BMS- Smart-Battery
+  #      ## Bus Number: 003
+  #      ## Device Number: 002
+  #      ## lsusb -v | grep -i "Vendor\|Product"
+  #      ## Vendor ID / Product ID: 075d / 0300
+  #    - DRIVER=usbhid-ups
+  #    - VENDORID=075d
+  #    - PRODUCTID=0300
+  #  ports:
+  #    - "3494:3493"
+  #  restart: always
+  #  # build: . # uncomment to build from source
+  #  # Keep both USB lines below. Together they let the driver reach a UPS that
+  #  # drops off USB and comes back. A devices: mapping cannot do that.
+  #  device_cgroup_rules:
+  #    #- /dev/bus/usb:/dev/bus/usb
+  #    - "c 189:* rmw"
+  #  volumes: *appVolumes
